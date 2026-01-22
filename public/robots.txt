@@ -1,0 +1,13 @@
+# Varity App Store - Robots.txt
+# https://store.varity.so
+
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://store.varity.so/sitemap.xml
+
+# Crawl delay (be nice to the server)
+Crawl-delay: 1

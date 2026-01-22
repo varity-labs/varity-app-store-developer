@@ -1,0 +1,15 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Data Crystal: Single color teal version -->
+  <defs>
+    <linearGradient id="teal-mono" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5EEAD4"/>
+      <stop offset="50%" stop-color="#14B8A6"/>
+      <stop offset="100%" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 6 L48 22 L32 32 L16 22 Z" fill="url(#teal-mono)" opacity="0.95"/>
+  <path d="M16 22 L32 32 L32 58 L8 36 Z" fill="url(#teal-mono)" opacity="0.7"/>
+  <path d="M48 22 L56 36 L32 58 L32 32 Z" fill="url(#teal-mono)" opacity="0.85"/>
+  <path d="M8 36 L32 58 L20 58 Z" fill="url(#teal-mono)" opacity="0.5"/>
+  <path d="M56 36 L44 58 L32 58 Z" fill="url(#teal-mono)" opacity="0.6"/>
+</svg>
