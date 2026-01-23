@@ -7,17 +7,9 @@ import { useState, useEffect } from "react";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { GithubProvider } from "@/contexts/GithubContext";
 
-// Get Privy app ID - must be a valid ID or Privy will throw
-const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-
-// Debug: Log Privy configuration status
-if (typeof window !== 'undefined') {
-  console.log('[Varity] Privy App ID configured:', !!PRIVY_APP_ID);
-  if (!PRIVY_APP_ID) {
-    console.warn('[Varity] NEXT_PUBLIC_PRIVY_APP_ID is not set. Sign-in will not work.');
-    console.warn('[Varity] Make sure environment variables are set in your hosting platform and rebuild.');
-  }
-}
+// Privy App ID - hardcoded for static export reliability
+// This is a public value (NEXT_PUBLIC_ prefix) so it's safe to include in client code
+const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cm6f5z5og0g91t0pbulwvf5o2";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(

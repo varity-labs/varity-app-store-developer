@@ -2,8 +2,9 @@
 import { createThirdwebClient, defineChain } from "thirdweb";
 
 // Create thirdweb client (function-based v5 API)
+// Client ID hardcoded for static export reliability - this is a public value
 export const thirdwebClient = createThirdwebClient({
-  clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "demo-client-id",
+  clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "acb17e07e34ab2b8317aa40cbb1b5e1d",
 });
 
 // Define Varity L3 chain

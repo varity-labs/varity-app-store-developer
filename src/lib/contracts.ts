@@ -2,8 +2,9 @@
 import { getContract } from "thirdweb";
 import { thirdwebClient, varityL3 } from "./thirdweb";
 
-// Contract address - set this after deployment
-export const VARITY_APP_REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_VARITY_REGISTRY_ADDRESS as `0x${string}` || "0x0000000000000000000000000000000000000000";
+// Contract address - hardcoded for static export reliability
+// Deployed on Varity L3 Testnet (Chain ID: 33529)
+export const VARITY_APP_REGISTRY_ADDRESS = (process.env.NEXT_PUBLIC_VARITY_REGISTRY_ADDRESS || "0x3faa42a8639fcb076160d553e8d6e05add7d97a5") as `0x${string}`;
 
 // Get the VarityAppRegistry contract instance
 export function getRegistryContract() {
