@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/Badge";
-import { Plus, ExternalLink, Settings, Trash2, CheckCircle, Loader2, AlertCircle, Share2, PartyPopper } from "lucide-react";
+import { Plus, ExternalLink, Settings, Trash2, CheckCircle, Loader2, AlertCircle, Share2, PartyPopper, DollarSign, TrendingUp, Users, ArrowUpRight } from "lucide-react";
 import type { AppData } from "@/lib/constants";
 import { useContract } from "@/hooks/useContract";
 
@@ -97,7 +97,7 @@ export default function DashboardPage() {
 
         {/* Stats Summary - only show if has apps */}
         {apps.length > 0 && (
-          <div className="flex gap-6">
+          <div className="flex flex-wrap gap-6">
             <div className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-950/50">
                 <CheckCircle className="h-5 w-5 text-emerald-400" />
@@ -119,6 +119,88 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Revenue Overview - only show if has approved apps */}
+      {liveAppsCount > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-100">Revenue Overview</h2>
+            <span className="text-xs text-slate-500">70% revenue share</span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* Total Revenue */}
+            <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
+                  <DollarSign className="h-5 w-5 text-emerald-400" />
+                </div>
+                <span className="flex items-center gap-1 text-xs text-emerald-400">
+                  <TrendingUp className="h-3 w-3" />
+                  All time
+                </span>
+              </div>
+              <div className="mt-4">
+                <div className="text-2xl font-bold text-slate-100">$0.00</div>
+                <div className="text-xs text-slate-500 mt-1">Total Earnings</div>
+              </div>
+            </div>
+
+            {/* This Month */}
+            <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+                  <TrendingUp className="h-5 w-5 text-blue-400" />
+                </div>
+                <span className="text-xs text-slate-500">January 2026</span>
+              </div>
+              <div className="mt-4">
+                <div className="text-2xl font-bold text-slate-100">$0.00</div>
+                <div className="text-xs text-slate-500 mt-1">This Month</div>
+              </div>
+            </div>
+
+            {/* Active Subscribers */}
+            <div className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/50 p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+                  <Users className="h-5 w-5 text-purple-400" />
+                </div>
+                <span className="text-xs text-slate-500">Paying users</span>
+              </div>
+              <div className="mt-4">
+                <div className="text-2xl font-bold text-slate-100">0</div>
+                <div className="text-xs text-slate-500 mt-1">Active Subscribers</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Revenue Note */}
+          <div className="mt-4 rounded-lg border border-slate-800/50 bg-slate-900/30 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/10 flex-shrink-0">
+                <DollarSign className="h-4 w-4 text-brand-400" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-300">
+                  Revenue is collected automatically through on-chain payments with a 70/30 split.
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Your 70% share is sent directly to your connected wallet. View transaction history on the{" "}
+                  <a
+                    href="https://explorer-varity-testnet-rroe52pwjp.t.conduit.xyz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-400 hover:text-brand-300 inline-flex items-center gap-0.5"
+                  >
+                    block explorer
+                    <ArrowUpRight className="h-3 w-3" />
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Apps list */}
       <div className="mt-8">

@@ -29,19 +29,18 @@ export default function DeveloperLandingPage() {
             <div className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 border border-brand-500/20 px-4 py-2 mb-6 animate-fade-in">
               <Clock className="h-4 w-4 text-brand-400" />
               <span className="text-sm font-medium text-brand-400">
-                Average approval time: 24 hours
+                24-48 hour approval
               </span>
             </div>
 
             <h1 className="text-display-lg md:text-display-xl text-foreground animate-slide-up">
-              Get Your App in Front of{" "}
-              <span className="text-gradient">Thousands</span>
+              Distribute Your App to{" "}
+              <span className="text-gradient">Thousands of Users</span>
             </h1>
 
             <p className="mt-6 text-body-lg text-foreground-secondary max-w-2xl mx-auto animate-slide-up">
-              Join the curated marketplace trusted by developers worldwide. Ship
-              faster, reach more users, and save up to 85% on infrastructure
-              costs.
+              Submit your app to the Varity App Store. Get discovered by
+              enterprise customers and save 70-85% on infrastructure costs.
             </p>
 
             {/* CTA Buttons */}
@@ -59,7 +58,7 @@ export default function DeveloperLandingPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all duration-200 border border-border bg-transparent text-foreground hover:bg-background-quaternary hover:border-brand-500 h-14 px-10"
               >
-                View Documentation
+                Read the Docs
               </a>
             </div>
 
@@ -79,7 +78,7 @@ export default function DeveloperLandingPage() {
         <div className="text-center mb-12">
           <p className="text-overline text-brand-400 mb-4">WHY VARITY</p>
           <h2 className="text-display-md text-foreground">
-            Built for Developers, By Developers
+            Focus on Building. We Handle Distribution.
           </h2>
         </div>
 
@@ -90,11 +89,11 @@ export default function DeveloperLandingPage() {
               <Zap className="h-6 w-6 text-brand-400" />
             </div>
             <h3 className="text-heading-lg text-foreground mb-2">
-              Instant Distribution
+              Instant Reach
             </h3>
             <p className="text-body-md text-foreground-secondary">
-              Get your app in front of thousands of potential users the moment
-              it&#39;s approved. No marketing budget required.
+              Your app goes live to thousands of users the moment it&#39;s
+              approved. No marketing spend required.
             </p>
           </div>
 
@@ -104,11 +103,11 @@ export default function DeveloperLandingPage() {
               <DollarSign className="h-6 w-6 text-electric-400" />
             </div>
             <h3 className="text-heading-lg text-foreground mb-2">
-              Earn Revenue
+              Built-in Payments
             </h3>
             <p className="text-body-md text-foreground-secondary">
-              Monetize your app with built-in payment processing and subscription
-              management. Keep what you earn.
+              Charge for your app with integrated payments and subscriptions.
+              You keep what you earn.
             </p>
           </div>
 
@@ -118,11 +117,11 @@ export default function DeveloperLandingPage() {
               <Award className="h-6 w-6 text-success" />
             </div>
             <h3 className="text-heading-lg text-foreground mb-2">
-              Curated Marketplace
+              Quality Over Quantity
             </h3>
             <p className="text-body-md text-foreground-secondary">
-              Stand out in a quality-focused store. Only the best apps make it
-              through our review process.
+              Every app is reviewed. Users trust that listed apps meet our
+              quality standards.
             </p>
           </div>
 
@@ -132,11 +131,11 @@ export default function DeveloperLandingPage() {
               <Server className="h-6 w-6 text-warning" />
             </div>
             <h3 className="text-heading-lg text-foreground mb-2">
-              Zero Hosting Costs
+              Cut Hosting Costs 70-85%
             </h3>
             <p className="text-body-md text-foreground-secondary">
-              Deploy on decentralized infrastructure and save 70-85% compared to
-              AWS, Azure, or Google Cloud.
+              Deploy on modern infrastructure. Pay a fraction of what AWS,
+              Azure, or GCP charge.
             </p>
           </div>
         </div>
@@ -193,7 +192,7 @@ export default function DeveloperLandingPage() {
         <div className="text-center mb-12">
           <p className="text-overline text-brand-400 mb-4">HOW IT WORKS</p>
           <h2 className="text-display-md text-foreground">
-            Launch Your App in 5 Simple Steps
+            From Submit to Live in 5 Steps
           </h2>
         </div>
 
@@ -245,8 +244,8 @@ export default function DeveloperLandingPage() {
                 Manual Approval
               </h3>
               <p className="text-body-md text-foreground-secondary">
-                A human reviewer takes a final look to ensure quality. Average
-                approval time is 24 hours.
+                A reviewer checks your app for quality and compliance.
+                Typically completed within 24-48 hours.
               </p>
             </div>
           </div>
@@ -279,8 +278,8 @@ export default function DeveloperLandingPage() {
                 Grow and Earn
               </h3>
               <p className="text-body-md text-foreground-secondary">
-                Track usage, collect payments, and iterate based on user
-                feedback. We handle the infrastructure, you focus on building.
+                Earn revenue through the on-chain payment system with automatic
+                70/30 revenue split. We handle infrastructure, you focus on building.
               </p>
             </div>
           </div>
@@ -292,11 +291,11 @@ export default function DeveloperLandingPage() {
         <div className="section-container section-padding">
           <div className="card bg-gradient-to-br from-brand-950/30 to-electric-950/30 border-brand-500/20 p-8 md:p-16 text-center">
             <h2 className="text-display-md md:text-display-lg text-foreground">
-              Ready to Get Started?
+              Ready to Launch?
             </h2>
             <p className="mt-4 text-body-lg text-foreground-secondary max-w-2xl mx-auto">
-              Join hundreds of developers who trust Varity to distribute their
-              apps. Submit your app today and get approved in 24-48 hours.
+              Join hundreds of developers distributing apps through Varity.
+              Submit today and go live within 48 hours.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Link

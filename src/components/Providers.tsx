@@ -5,6 +5,7 @@ import { ThirdwebProvider } from "thirdweb/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ToastProvider } from "@/contexts/ToastContext";
+import { GithubProvider } from "@/contexts/GithubContext";
 
 // Get Privy app ID - must be a valid ID or Privy will throw
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
@@ -69,7 +70,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThirdwebProvider>
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
-            {children}
+            <GithubProvider>
+              {children}
+            </GithubProvider>
           </ToastProvider>
         </QueryClientProvider>
       </ThirdwebProvider>

@@ -11,13 +11,13 @@ import { cn } from "@/lib/utils";
 interface NavItem {
   label: string;
   href: string;
+  external?: boolean;
 }
 
 const navigation: NavItem[] = [
-  { label: "Home", href: "/" },
-  { label: "Submit App", href: "/submit" },
-  { label: "Documentation", href: "/docs" },
-  { label: "SDK", href: "/sdk" },
+  { label: "Submit", href: "/submit" },
+  { label: "Docs", href: "https://docs.varity.so", external: true },
+  { label: "GitHub", href: "https://github.com/varity-labs", external: true },
 ];
 
 export function Header() {
@@ -97,15 +97,27 @@ export function Header() {
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="px-4 py-2 text-sm font-medium text-foreground-secondary hover:text-foreground transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navigation.map((item) =>
+                item.external ? (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 text-sm font-medium text-foreground-secondary hover:text-foreground transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="px-4 py-2 text-sm font-medium text-foreground-secondary hover:text-foreground transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                )
+              )}
               {authenticated && (
                 <Link
                   href="/dashboard"
@@ -130,7 +142,7 @@ export function Header() {
                 {ready && !authenticated ? (
                   <button
                     onClick={login}
-                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-all duration-200 ease-out bg-brand-500 text-slate-950 hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.5),0_0_40px_rgba(20,184,166,0.3)] h-10 px-5 py-2"
+                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-all duration-200 ease-out h-10 px-5 py-2 bg-brand-500 text-slate-950 hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.5),0_0_40px_rgba(20,184,166,0.3)]"
                   >
                     Sign In
                     <ArrowRight className="h-4 w-4" />
@@ -174,16 +186,29 @@ export function Header() {
         <div className="fixed inset-0 z-40 pt-20 bg-background lg:hidden animate-fade-in">
           <div className="section-container py-8">
             <nav className="flex flex-col gap-4">
-              {navigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="py-3 text-lg font-medium text-foreground-secondary hover:text-foreground transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navigation.map((item) =>
+                item.external ? (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="py-3 text-lg font-medium text-foreground-secondary hover:text-foreground transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="py-3 text-lg font-medium text-foreground-secondary hover:text-foreground transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                )
+              )}
               {authenticated && (
                 <Link
                   href="/dashboard"
@@ -210,7 +235,7 @@ export function Header() {
                       login();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-semibold transition-all duration-200 ease-out bg-brand-500 text-slate-950 hover:bg-brand-400 h-12 px-8"
+                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-semibold transition-all duration-200 ease-out h-12 px-8 bg-brand-500 text-slate-950 hover:bg-brand-400"
                   >
                     Sign In
                     <ArrowRight className="h-5 w-5" />
