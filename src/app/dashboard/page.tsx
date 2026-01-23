@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/Badge";
-import { Plus, ExternalLink, Settings, Trash2 } from "lucide-react";
+import { Plus, ExternalLink, Settings, Trash2, CheckCircle, Loader2, AlertCircle, Share2, PartyPopper } from "lucide-react";
 import type { AppData } from "@/lib/constants";
 import { useContract } from "@/hooks/useContract";
 
@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const { authenticated, login, user } = useAuth();
   const [apps, setApps] = useState<AppData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [dismissedCelebrations, setDismissedCelebrations] = useState<Set<string>>(new Set());
 
   const { getAppsByDeveloper, deactivateApp, isLoading: contractLoading } = useContract();
 
@@ -54,23 +55,69 @@ export default function DashboardPage() {
     );
   }
 
+  // Calculate stats
+  const liveAppsCount = apps.filter(app => app.isApproved && app.isActive).length;
+  const pendingAppsCount = apps.filter(app => !app.isApproved && app.isActive).length;
+
+  // Helper to format time ago
+  const getTimeAgo = (timestamp: bigint) => {
+    const now = Date.now();
+    const createdAt = Number(timestamp) * 1000;
+    const diff = now - createdAt;
+
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return 'just now';
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-100">My Applications</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Manage your submitted applications and track their approval status.
-          </p>
+      {/* Header with Stats */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-100">My Applications</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Manage your submitted applications and track their approval status.
+            </p>
+          </div>
+          <Link
+            href="/submit"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-white shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            New Application
+          </Link>
         </div>
-        <Link
-          href="/submit"
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-white"
-        >
-          <Plus className="h-4 w-4" />
-          New Application
-        </Link>
+
+        {/* Stats Summary - only show if has apps */}
+        {apps.length > 0 && (
+          <div className="flex gap-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-950/50">
+                <CheckCircle className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div>
+                <div className="text-lg font-semibold text-slate-100">{liveAppsCount}</div>
+                <div className="text-xs text-slate-500">Live Apps</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-950/50">
+                <Loader2 className="h-5 w-5 text-blue-400" />
+              </div>
+              <div>
+                <div className="text-lg font-semibold text-slate-100">{pendingAppsCount}</div>
+                <div className="text-xs text-slate-500">Pending Review</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Apps list */}
@@ -82,23 +129,57 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : apps.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center">
-            <h3 className="text-base font-medium text-slate-200">No Applications Yet</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Submit your first application to join the curated marketplace and reach enterprise customers.
-            </p>
-            <Link
-              href="/submit"
-              className="mt-4 inline-flex items-center gap-2 rounded-md bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-white"
-            >
-              <Plus className="h-4 w-4" />
-              Submit Application
-            </Link>
+          <div className="rounded-lg border border-dashed border-slate-800 bg-slate-900/30 p-12 text-center">
+            <div className="mx-auto max-w-md">
+              {/* Icon */}
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+                <Plus className="h-8 w-8 text-slate-400" />
+              </div>
+
+              {/* Heading */}
+              <h3 className="mt-6 text-lg font-semibold text-slate-200">Launch Your First Application</h3>
+              <p className="mt-3 text-sm text-slate-400">
+                Ready to join 100+ developers on Varity? Submit your app and get reviewed within 24 hours.
+              </p>
+
+              {/* CTA */}
+              <Link
+                href="/submit"
+                className="mt-6 inline-flex items-center gap-2 rounded-md bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-900 transition-all hover:bg-white hover:shadow-lg"
+              >
+                <Plus className="h-4 w-4" />
+                Submit Your First App
+              </Link>
+
+              {/* Benefits */}
+              <div className="mt-8 grid grid-cols-1 gap-3 text-left sm:grid-cols-3">
+                <div className="flex items-center gap-2 text-sm text-slate-400">
+                  <CheckCircle className="h-4 w-4 text-emerald-400" />
+                  <span>24-hour review</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-400">
+                  <CheckCircle className="h-4 w-4 text-emerald-400" />
+                  <span>70-85% cost savings</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-400">
+                  <CheckCircle className="h-4 w-4 text-emerald-400" />
+                  <span>Enterprise customers</span>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
             {apps.map((app) => (
-              <AppRow key={app.id.toString()} app={app} />
+              <AppRow
+                key={app.id.toString()}
+                app={app}
+                celebrationDismissed={dismissedCelebrations.has(app.id.toString())}
+                onDismissCelebration={() => {
+                  setDismissedCelebrations(prev => new Set(prev).add(app.id.toString()));
+                }}
+                getTimeAgo={getTimeAgo}
+              />
             ))}
           </div>
         )}
@@ -107,7 +188,17 @@ export default function DashboardPage() {
   );
 }
 
-function AppRow({ app }: { app: AppData }) {
+function AppRow({
+  app,
+  celebrationDismissed,
+  onDismissCelebration,
+  getTimeAgo
+}: {
+  app: AppData;
+  celebrationDismissed: boolean;
+  onDismissCelebration: () => void;
+  getTimeAgo: (timestamp: bigint) => string;
+}) {
   const { deactivateApp, isLoading: contractLoading } = useContract();
   const { user } = useAuth();
   const [isDeactivating, setIsDeactivating] = useState(false);
@@ -140,54 +231,182 @@ function AppRow({ app }: { app: AppData }) {
     }
   };
 
+  const handleShare = () => {
+    const appUrl = `${window.location.origin}/app/${app.id}`;
+    if (navigator.share) {
+      navigator.share({
+        title: app.name,
+        text: app.description,
+        url: appUrl,
+      }).catch(() => {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(appUrl);
+        alert("Link copied to clipboard!");
+      });
+    } else {
+      navigator.clipboard.writeText(appUrl);
+      alert("Link copied to clipboard!");
+    }
+  };
+
+  // Show approval celebration
+  const showCelebration = app.isApproved && app.isActive && !celebrationDismissed;
+
+  // Show pending review state
+  const showPending = !app.isApproved && app.isActive;
+
+  // Show rejection encouragement (assuming inactive + not approved = rejected)
+  const showRejection = !app.isApproved && !app.isActive;
+
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900/50 p-5 sm:flex-row sm:items-center">
-      {/* Logo */}
-      <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-800">
-        {app.logoUrl ? (
-          <Image src={app.logoUrl} alt={app.name} fill className="object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-slate-600">
-            {app.name.charAt(0).toUpperCase()}
+    <div className="space-y-3">
+      {/* Approval Celebration Banner */}
+      {showCelebration && (
+        <div className="relative overflow-hidden rounded-lg border border-emerald-900/50 bg-gradient-to-r from-emerald-950/50 to-emerald-900/20 p-4">
+          {/* Confetti effect using emoji */}
+          <div className="absolute top-2 left-4 text-2xl animate-bounce">🎉</div>
+          <div className="absolute top-1 right-8 text-xl animate-bounce" style={{ animationDelay: '0.1s' }}>✨</div>
+          <div className="absolute top-3 right-16 text-2xl animate-bounce" style={{ animationDelay: '0.2s' }}>🎊</div>
+
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500">
+              <PartyPopper className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-emerald-400">Congratulations! Your app is live!</h3>
+              <p className="mt-1 text-sm text-emerald-400/80">
+                {app.name} has been approved and is now visible in the App Store.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href={`/app/${app.id}`}
+                  className="inline-flex items-center gap-2 rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-400"
+                >
+                  View Your Listing
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+                <button
+                  onClick={handleShare}
+                  className="inline-flex items-center gap-2 rounded-md border border-emerald-500 bg-transparent px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/10"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  Share
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={onDismissCelebration}
+              className="flex-shrink-0 text-emerald-400/60 transition-colors hover:text-emerald-400"
+              aria-label="Dismiss"
+            >
+              <span className="text-xl">×</span>
+            </button>
           </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-medium text-slate-100">{app.name}</h3>
-          {getStatusBadge()}
         </div>
-        <p className="mt-1 line-clamp-1 text-sm text-slate-500">{app.description}</p>
-      </div>
+      )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-2">
-        <a
-          href={app.appUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-md border border-slate-800 p-2 text-slate-500 transition-colors hover:border-slate-700 hover:text-slate-300"
-          title="Open application"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </a>
-        <Link
-          href={`/dashboard/edit/${app.id.toString()}`}
-          className="rounded-md border border-slate-800 p-2 text-slate-500 transition-colors hover:border-slate-700 hover:text-slate-300"
-          title="Edit application"
-        >
-          <Settings className="h-4 w-4" />
-        </Link>
-        <button
-          onClick={handleDeactivate}
-          disabled={isDeactivating || contractLoading}
-          className="rounded-md border border-slate-800 p-2 text-slate-500 transition-colors hover:border-red-900 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-          title="Deactivate application"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+      {/* Pending Review State */}
+      {showPending && (
+        <div className="rounded-lg border border-blue-900/50 bg-blue-950/30 p-4">
+          <div className="flex items-start gap-3">
+            <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin text-blue-400" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-blue-400">Under Review</h4>
+              <p className="mt-1 text-sm text-blue-400/80">
+                Your app is being reviewed by our team. Average review time: 24 hours.
+              </p>
+              <p className="mt-1 text-xs text-blue-400/60">
+                Submitted {getTimeAgo(app.createdAt)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Encouragement */}
+      {showRejection && (
+        <div className="rounded-lg border border-orange-900/50 bg-orange-950/30 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-orange-400" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-orange-400">Needs Revision</h4>
+              <p className="mt-1 text-sm text-orange-400/80">
+                Your application needs some updates before it can be approved.
+              </p>
+              <p className="mt-2 text-sm text-orange-300">
+                Don&apos;t worry! Most apps are approved after addressing feedback.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href={`/dashboard/edit/${app.id.toString()}`}
+                  className="inline-flex items-center gap-2 rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-400"
+                >
+                  Update & Resubmit
+                </Link>
+                <a
+                  href="https://docs.varity.so/guidelines"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md border border-orange-500 bg-transparent px-4 py-2 text-sm font-medium text-orange-400 transition-colors hover:bg-orange-500/10"
+                >
+                  View Guidelines
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* App Card */}
+      <div className="flex flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900/50 p-5 sm:flex-row sm:items-center">
+        {/* Logo */}
+        <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-800">
+          {app.logoUrl ? (
+            <Image src={app.logoUrl} alt={app.name} fill className="object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-slate-600">
+              {app.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-medium text-slate-100">{app.name}</h3>
+            {getStatusBadge()}
+          </div>
+          <p className="mt-1 line-clamp-1 text-sm text-slate-500">{app.description}</p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <a
+            href={app.appUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-md border border-slate-800 p-2 text-slate-500 transition-colors hover:border-slate-700 hover:text-slate-300"
+            title="Open application"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </a>
+          <Link
+            href={`/dashboard/edit/${app.id.toString()}`}
+            className="rounded-md border border-slate-800 p-2 text-slate-500 transition-colors hover:border-slate-700 hover:text-slate-300"
+            title="Edit application"
+          >
+            <Settings className="h-4 w-4" />
+          </Link>
+          <button
+            onClick={handleDeactivate}
+            disabled={isDeactivating || contractLoading}
+            className="rounded-md border border-slate-800 p-2 text-slate-500 transition-colors hover:border-red-900 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Deactivate application"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

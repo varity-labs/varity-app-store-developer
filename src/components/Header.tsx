@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useContract } from "@/hooks/useContract";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -13,14 +14,18 @@ interface NavItem {
 }
 
 const navigation: NavItem[] = [
-  { label: "Browse", href: "/" },
-  { label: "Submit", href: "/submit" },
+  { label: "Home", href: "/" },
+  { label: "Submit App", href: "/submit" },
+  { label: "Documentation", href: "/docs" },
+  { label: "SDK", href: "/sdk" },
 ];
 
 export function Header() {
   const { ready, authenticated, login, logout, user } = useAuth();
+  const { isAdmin: checkIsAdmin } = useContract();
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -30,6 +35,26 @@ export function Header() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Check if user is admin
+  React.useEffect(() => {
+    async function checkAdminStatus() {
+      if (!authenticated || !user?.wallet?.address) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const adminStatus = await checkIsAdmin(user.wallet.address);
+        setIsAdmin(adminStatus);
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        setIsAdmin(false);
+      }
+    }
+
+    checkAdminStatus();
+  }, [authenticated, user?.wallet?.address, checkIsAdmin]);
 
   const displayName = user?.email?.address
     ? user.email.address.split("@")[0]
@@ -65,7 +90,7 @@ export function Header() {
                   Varity
                 </span>
                 <span className="text-sm font-medium text-foreground-secondary">
-                  App Store
+                  Developer Portal
                 </span>
               </div>
             </Link>
@@ -87,6 +112,14 @@ export function Header() {
                   className="px-4 py-2 text-sm font-medium text-foreground-secondary hover:text-foreground transition-colors"
                 >
                   Dashboard
+                </Link>
+              )}
+              {authenticated && isAdmin && (
+                <Link
+                  href="/admin"
+                  className="px-4 py-2 text-sm font-medium text-foreground-secondary hover:text-foreground transition-colors"
+                >
+                  Admin
                 </Link>
               )}
             </div>
@@ -158,6 +191,15 @@ export function Header() {
                   className="py-3 text-lg font-medium text-foreground-secondary hover:text-foreground transition-colors"
                 >
                   Dashboard
+                </Link>
+              )}
+              {authenticated && isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="py-3 text-lg font-medium text-foreground-secondary hover:text-foreground transition-colors"
+                >
+                  Admin
                 </Link>
               )}
 

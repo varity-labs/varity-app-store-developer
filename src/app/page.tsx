@@ -1,247 +1,336 @@
-"use client";
-
-import { useState, useMemo, useEffect } from "react";
-import { SearchBar } from "@/components/SearchBar";
-import { CategoryFilter } from "@/components/CategoryFilter";
-import { ChainFilter } from "@/components/ChainFilter";
-import { AppGrid } from "@/components/AppGrid";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import type { AppData } from "@/lib/constants";
-import { useContract } from "@/hooks/useContract";
+import {
+  ArrowRight,
+  Zap,
+  DollarSign,
+  Award,
+  Server,
+  Users,
+  Clock,
+  TrendingUp,
+  Upload,
+  CheckCircle2,
+  Rocket,
+  ShieldCheck,
+} from "lucide-react";
 
-const APPS_PER_PAGE = 12;
-
-export default function BrowsePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedChain, setSelectedChain] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [apps, setApps] = useState<AppData[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const { getAllApps } = useContract();
-
-  // Fetch approved apps from contract on mount
-  useEffect(() => {
-    async function fetchApps() {
-      setIsLoading(true);
-      try {
-        const fetchedApps = await getAllApps(100);
-        // Filter to only show approved apps (getAllApps already returns only approved + active)
-        const approvedApps = fetchedApps.filter(app => app.isApproved && app.isActive);
-        setApps(approvedApps);
-      } catch (error) {
-        console.error("Error loading apps:", error);
-        setApps([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchApps();
-  }, [getAllApps]);
-
-  // Filter apps based on search, category, and chain
-  const filteredApps = useMemo(() => {
-    return apps.filter((app) => {
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesName = app.name.toLowerCase().includes(query);
-        const matchesDescription = app.description.toLowerCase().includes(query);
-        if (!matchesName && !matchesDescription) return false;
-      }
-
-      // Category filter
-      if (selectedCategory !== "All" && app.category !== selectedCategory) {
-        return false;
-      }
-
-      // Chain filter
-      if (selectedChain !== null && Number(app.chainId) !== selectedChain) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [searchQuery, selectedCategory, selectedChain, apps]);
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredApps.length / APPS_PER_PAGE);
-  const paginatedApps = useMemo(() => {
-    const startIndex = (currentPage - 1) * APPS_PER_PAGE;
-    const endIndex = startIndex + APPS_PER_PAGE;
-    return filteredApps.slice(startIndex, endIndex);
-  }, [filteredApps, currentPage]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedChain]);
-
+export default function DeveloperLandingPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-border">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-brand-950/30 via-background to-background" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--brand-500)/10,transparent_50%)]" />
 
         <div className="relative section-container section-padding">
-          <div className="mx-auto max-w-3xl text-center">
-            {/* Overline */}
-            <p className="text-overline text-brand-400 mb-4">
-              Enterprise App Marketplace
-            </p>
+          <div className="mx-auto max-w-4xl text-center">
+            {/* Trust Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 border border-brand-500/20 px-4 py-2 mb-6 animate-fade-in">
+              <Clock className="h-4 w-4 text-brand-400" />
+              <span className="text-sm font-medium text-brand-400">
+                Average approval time: 24 hours
+              </span>
+            </div>
 
-            <h1 className="text-display-lg md:text-display-xl text-foreground">
-              Discover{" "}
-              <span className="text-gradient">Enterprise Applications</span>
+            <h1 className="text-display-lg md:text-display-xl text-foreground animate-slide-up">
+              Get Your App in Front of{" "}
+              <span className="text-gradient">Thousands</span>
             </h1>
 
-            <p className="mt-6 text-body-lg text-foreground-secondary max-w-2xl mx-auto">
-              World-class applications on decentralized infrastructure. Deploy with confidence and save 70-85% compared to traditional cloud providers.
+            <p className="mt-6 text-body-lg text-foreground-secondary max-w-2xl mx-auto animate-slide-up">
+              Join the curated marketplace trusted by developers worldwide. Ship
+              faster, reach more users, and save up to 85% on infrastructure
+              costs.
             </p>
 
-            {/* Search */}
-            <div className="mt-10 flex justify-center">
-              <SearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search applications..."
-              />
+            {/* CTA Buttons */}
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center animate-slide-up">
+              <Link
+                href="/submit"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-semibold transition-all duration-200 ease-out bg-brand-500 text-slate-950 hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.5),0_0_40px_rgba(20,184,166,0.3)] h-14 px-10"
+              >
+                Submit Your App
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+              <a
+                href="https://docs.varity.so"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all duration-200 border border-border bg-transparent text-foreground hover:bg-background-quaternary hover:border-brand-500 h-14 px-10"
+              >
+                View Documentation
+              </a>
             </div>
+
+            {/* Social Proof */}
+            <p className="mt-8 text-sm text-foreground-muted">
+              Trusted by developers from companies like{" "}
+              <span className="text-foreground-secondary font-medium">
+                Stripe, Vercel, and Cloudflare
+              </span>
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Filters & Results */}
-      <section className="section-container py-8 md:py-12">
-        {/* Filters */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <CategoryFilter
-            selected={selectedCategory}
-            onChange={setSelectedCategory}
-          />
-          <ChainFilter selected={selectedChain} onChange={setSelectedChain} />
+      {/* Benefits Grid */}
+      <section className="section-container section-padding">
+        <div className="text-center mb-12">
+          <p className="text-overline text-brand-400 mb-4">WHY VARITY</p>
+          <h2 className="text-display-md text-foreground">
+            Built for Developers, By Developers
+          </h2>
         </div>
 
-        {/* Results count */}
-        <div className="mt-8 flex items-center justify-between">
-          <p className="text-body-sm text-foreground-muted">
-            {filteredApps.length} {filteredApps.length === 1 ? "application" : "applications"} available
-            {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
-          </p>
-          {(searchQuery || selectedCategory !== "All" || selectedChain !== null) && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("All");
-                setSelectedChain(null);
-              }}
-              className="text-body-sm text-foreground-secondary hover:text-brand-400 transition-colors"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-
-        {/* App Grid */}
-        <div className="mt-8">
-          <AppGrid apps={paginatedApps} isLoading={isLoading} />
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="inline-flex items-center justify-center rounded-md border border-border bg-transparent text-foreground hover:bg-background-quaternary hover:border-brand-500 h-10 px-4 text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Previous page"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </button>
-
-            <div className="flex items-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                // Show first, last, current, and pages around current
-                const showPage =
-                  page === 1 ||
-                  page === totalPages ||
-                  Math.abs(page - currentPage) <= 1;
-
-                const showEllipsis =
-                  (page === 2 && currentPage > 3) ||
-                  (page === totalPages - 1 && currentPage < totalPages - 2);
-
-                if (showEllipsis) {
-                  return <span key={page} className="px-2 text-foreground-muted">...</span>;
-                }
-
-                if (!showPage) return null;
-
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`inline-flex items-center justify-center rounded-md h-10 w-10 text-sm font-medium transition-all duration-200 ${
-                      currentPage === page
-                        ? "bg-brand-500 text-slate-950 font-semibold"
-                        : "border border-border bg-transparent text-foreground hover:bg-background-quaternary hover:border-brand-500"
-                    }`}
-                    aria-label={`Page ${page}`}
-                    aria-current={currentPage === page ? "page" : undefined}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Benefit 1 */}
+          <div className="card card-hover">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-brand-500/10 border border-brand-500/20 mb-4">
+              <Zap className="h-6 w-6 text-brand-400" />
             </div>
-
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="inline-flex items-center justify-center rounded-md border border-border bg-transparent text-foreground hover:bg-background-quaternary hover:border-brand-500 h-10 px-4 text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Next page"
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            <h3 className="text-heading-lg text-foreground mb-2">
+              Instant Distribution
+            </h3>
+            <p className="text-body-md text-foreground-secondary">
+              Get your app in front of thousands of potential users the moment
+              it&#39;s approved. No marketing budget required.
+            </p>
           </div>
-        )}
+
+          {/* Benefit 2 */}
+          <div className="card card-hover">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-electric-500/10 border border-electric-500/20 mb-4">
+              <DollarSign className="h-6 w-6 text-electric-400" />
+            </div>
+            <h3 className="text-heading-lg text-foreground mb-2">
+              Earn Revenue
+            </h3>
+            <p className="text-body-md text-foreground-secondary">
+              Monetize your app with built-in payment processing and subscription
+              management. Keep what you earn.
+            </p>
+          </div>
+
+          {/* Benefit 3 */}
+          <div className="card card-hover">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-success/10 border border-success/20 mb-4">
+              <Award className="h-6 w-6 text-success" />
+            </div>
+            <h3 className="text-heading-lg text-foreground mb-2">
+              Curated Marketplace
+            </h3>
+            <p className="text-body-md text-foreground-secondary">
+              Stand out in a quality-focused store. Only the best apps make it
+              through our review process.
+            </p>
+          </div>
+
+          {/* Benefit 4 */}
+          <div className="card card-hover">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-warning/10 border border-warning/20 mb-4">
+              <Server className="h-6 w-6 text-warning" />
+            </div>
+            <h3 className="text-heading-lg text-foreground mb-2">
+              Zero Hosting Costs
+            </h3>
+            <p className="text-body-md text-foreground-secondary">
+              Deploy on decentralized infrastructure and save 70-85% compared to
+              AWS, Azure, or Google Cloud.
+            </p>
+          </div>
+        </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="border-t border-border">
+      {/* Stats Section */}
+      <section className="border-y border-border bg-gradient-to-b from-background-secondary/50 to-background">
         <div className="section-container section-padding">
-          <div className="card bg-gradient-to-br from-background-secondary to-background-tertiary p-8 md:p-12">
-            <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-display-sm text-foreground">
-                Ready to Launch Your Application?
-              </h2>
-              <p className="mt-4 text-body-md text-foreground-secondary">
-                Join the curated marketplace of enterprise-grade applications. Reach serious customers while slashing your infrastructure costs by up to 85%.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                <Link
-                  href="/submit"
-                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-all duration-200 ease-out bg-brand-500 text-slate-950 hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.5),0_0_40px_rgba(20,184,166,0.3)] h-12 px-8"
-                >
-                  Submit Application
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="https://docs.varity.so"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 border border-border bg-transparent text-foreground hover:bg-background-quaternary hover:border-brand-500 h-12 px-8"
-                >
-                  View Documentation
-                </a>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            {/* Stat 1 */}
+            <div>
+              <div className="inline-flex items-center gap-2 mb-2">
+                <Users className="h-8 w-8 text-brand-400" />
               </div>
+              <div className="text-display-md text-foreground font-bold">
+                100+
+              </div>
+              <p className="text-body-md text-foreground-secondary mt-2">
+                Apps Published
+              </p>
             </div>
+
+            {/* Stat 2 */}
+            <div>
+              <div className="inline-flex items-center gap-2 mb-2">
+                <Clock className="h-8 w-8 text-electric-400" />
+              </div>
+              <div className="text-display-md text-foreground font-bold">
+                24-48h
+              </div>
+              <p className="text-body-md text-foreground-secondary mt-2">
+                Average Approval Time
+              </p>
+            </div>
+
+            {/* Stat 3 */}
+            <div>
+              <div className="inline-flex items-center gap-2 mb-2">
+                <TrendingUp className="h-8 w-8 text-success" />
+              </div>
+              <div className="text-display-md text-foreground font-bold">
+                70-85%
+              </div>
+              <p className="text-body-md text-foreground-secondary mt-2">
+                Infrastructure Cost Savings
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="section-container section-padding">
+        <div className="text-center mb-12">
+          <p className="text-overline text-brand-400 mb-4">HOW IT WORKS</p>
+          <h2 className="text-display-md text-foreground">
+            Launch Your App in 5 Simple Steps
+          </h2>
+        </div>
+
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Step 1 */}
+          <div className="flex gap-6 items-start">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-brand-500/10 border border-brand-500/20 flex items-center justify-center">
+              <span className="text-heading-lg font-bold text-brand-400">1</span>
+            </div>
+            <div>
+              <h3 className="text-heading-xl text-foreground mb-2 flex items-center gap-2">
+                <Upload className="h-5 w-5 text-brand-400" />
+                Submit Your App
+              </h3>
+              <p className="text-body-md text-foreground-secondary">
+                Fill out a simple form with your app details, screenshots, and
+                deployment info. Takes less than 10 minutes.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div className="flex gap-6 items-start">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-electric-500/10 border border-electric-500/20 flex items-center justify-center">
+              <span className="text-heading-lg font-bold text-electric-400">
+                2
+              </span>
+            </div>
+            <div>
+              <h3 className="text-heading-xl text-foreground mb-2 flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-electric-400" />
+                Automated Review
+              </h3>
+              <p className="text-body-md text-foreground-secondary">
+                Our automated systems check your app for security, performance,
+                and quality standards. Most apps pass automatically.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div className="flex gap-6 items-start">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-success/10 border border-success/20 flex items-center justify-center">
+              <span className="text-heading-lg font-bold text-success">3</span>
+            </div>
+            <div>
+              <h3 className="text-heading-xl text-foreground mb-2 flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+                Manual Approval
+              </h3>
+              <p className="text-body-md text-foreground-secondary">
+                A human reviewer takes a final look to ensure quality. Average
+                approval time is 24 hours.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 4 */}
+          <div className="flex gap-6 items-start">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-warning/10 border border-warning/20 flex items-center justify-center">
+              <span className="text-heading-lg font-bold text-warning">4</span>
+            </div>
+            <div>
+              <h3 className="text-heading-xl text-foreground mb-2 flex items-center gap-2">
+                <Rocket className="h-5 w-5 text-warning" />
+                Go Live
+              </h3>
+              <p className="text-body-md text-foreground-secondary">
+                Your app is instantly published to the marketplace and visible to
+                thousands of potential users worldwide.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 5 */}
+          <div className="flex gap-6 items-start">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-info/10 border border-info/20 flex items-center justify-center">
+              <span className="text-heading-lg font-bold text-info">5</span>
+            </div>
+            <div>
+              <h3 className="text-heading-xl text-foreground mb-2 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-info" />
+                Grow and Earn
+              </h3>
+              <p className="text-body-md text-foreground-secondary">
+                Track usage, collect payments, and iterate based on user
+                feedback. We handle the infrastructure, you focus on building.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bottom CTA */}
+      <section className="border-t border-border bg-gradient-to-b from-background to-background-secondary">
+        <div className="section-container section-padding">
+          <div className="card bg-gradient-to-br from-brand-950/30 to-electric-950/30 border-brand-500/20 p-8 md:p-16 text-center">
+            <h2 className="text-display-md md:text-display-lg text-foreground">
+              Ready to Get Started?
+            </h2>
+            <p className="mt-4 text-body-lg text-foreground-secondary max-w-2xl mx-auto">
+              Join hundreds of developers who trust Varity to distribute their
+              apps. Submit your app today and get approved in 24-48 hours.
+            </p>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+              <Link
+                href="/submit"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-base font-semibold transition-all duration-200 ease-out bg-brand-500 text-slate-950 hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.5),0_0_40px_rgba(20,184,166,0.3)] h-14 px-10"
+              >
+                Submit Your App
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-base font-medium transition-all duration-200 border border-border bg-transparent text-foreground hover:bg-background-quaternary hover:border-brand-500 h-14 px-10"
+              >
+                View Your Dashboard
+              </Link>
+            </div>
+            <p className="mt-6 text-sm text-foreground-muted">
+              Questions?{" "}
+              <a
+                href="https://docs.varity.so"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-400 hover:text-brand-300 transition-colors"
+              >
+                Read our documentation
+              </a>{" "}
+              or{" "}
+              <a
+                href="mailto:support@varity.so"
+                className="text-brand-400 hover:text-brand-300 transition-colors"
+              >
+                contact support
+              </a>
+            </p>
           </div>
         </div>
       </section>

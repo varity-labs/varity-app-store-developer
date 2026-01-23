@@ -97,7 +97,44 @@ export default function SubmitPage() {
     setErrorMessage("");
 
     try {
-      // Call smart contract to register app
+      // STEP 1: Send email notification via Web3Forms BEFORE blockchain call
+      try {
+        const web3formsResponse = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            access_key: "322fcdfe-779a-4cab-a76a-11285466709c",
+            subject: `New App Submission: ${formData.name}`,
+            from_name: "Varity App Store",
+            to: "team@varity.so",
+            // Form data
+            app_name: formData.name,
+            description: formData.description,
+            app_url: formData.appUrl,
+            logo_url: formData.logoUrl || "Not provided",
+            category: formData.category,
+            chain_id: formData.chainId,
+            github_url: formData.githubUrl || "Not provided",
+            built_with_varity: formData.builtWithVarity ? "Yes" : "No",
+            screenshots: formData.screenshots.length > 0 ? formData.screenshots.join(", ") : "None",
+            developer_address: account,
+          }),
+        });
+
+        const web3formsData = await web3formsResponse.json();
+        if (!web3formsData.success) {
+          console.warn("Web3Forms notification failed:", web3formsData.message);
+          // Continue anyway - email failure shouldn't block submission
+        }
+      } catch (emailError) {
+        console.warn("Email notification failed:", emailError);
+        // Continue anyway - email failure shouldn't block submission
+      }
+
+      // STEP 2: Call smart contract to register app
       const result = await registerApp({
         name: formData.name,
         description: formData.description,
@@ -144,11 +181,11 @@ export default function SubmitPage() {
         <div className="mb-10">
           <h1 className="text-display-sm text-foreground">Submit Your Application</h1>
           <p className="mt-3 text-body-md text-foreground-secondary max-w-2xl">
-            Submit your application for our curation team to review. Once approved, your app will be listed in the marketplace and discoverable by enterprise customers worldwide.
+            Join the growing ecosystem of verified applications. Your app will be reviewed within 48 hours and discoverable by enterprise customers worldwide.
           </p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/5 px-4 py-1.5 text-xs text-brand-400">
             <CheckCircle className="h-3.5 w-3.5" />
-            <span>Typical approval time: 24-48 hours</span>
+            <span>Average approval time: 24 hours</span>
           </div>
         </div>
 
@@ -159,9 +196,9 @@ export default function SubmitPage() {
               <CheckCircle className="h-5 w-5 text-emerald-400" />
             </div>
             <div className="flex-1">
-              <h3 className="text-heading-md text-emerald-400">Application Submitted Successfully</h3>
+              <h3 className="text-heading-md text-emerald-400">Application Submitted Successfully!</h3>
               <p className="mt-2 text-body-sm text-emerald-400/80">
-                Your application has been submitted to our curation team. You&apos;ll be notified once it&apos;s approved and live in the marketplace.
+                Your application has been submitted successfully! Our team will review it within 24-48 hours. Check your dashboard for status updates.
               </p>
               {txHash && varityL3.blockExplorers?.[0] && (
                 <a
@@ -175,7 +212,7 @@ export default function SubmitPage() {
               )}
               <p className="mt-3 text-body-sm text-emerald-400/60 flex items-center gap-2">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Redirecting to dashboard...
+                Redirecting to your dashboard...
               </p>
             </div>
           </div>
@@ -206,16 +243,19 @@ export default function SubmitPage() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/10 mb-6">
               <AlertCircle className="h-8 w-8 text-brand-400" />
             </div>
-            <h2 className="text-heading-lg text-foreground">Sign In to Continue</h2>
+            <h2 className="text-heading-lg text-foreground">Ready to submit your app?</h2>
             <p className="mt-3 text-body-md text-foreground-secondary max-w-sm">
-              Sign in with your wallet to submit your application and join our curated marketplace of enterprise-grade apps.
+              Sign in with your wallet or email to submit your application. It takes less than 2 minutes.
             </p>
             <button
               onClick={login}
               className="mt-8 inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-8 h-12 text-sm font-semibold text-slate-950 transition-all hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.3)]"
             >
-              Sign In with Wallet
+              Sign In to Continue
             </button>
+            <p className="mt-4 text-xs text-foreground-muted">
+              Join 100+ developers building on Varity
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -224,6 +264,9 @@ export default function SubmitPage() {
               <label htmlFor="name" className="block text-sm font-medium text-slate-200">
                 Application Name <span className="text-red-400">*</span>
               </label>
+              <p className="mt-1 text-xs text-slate-500">
+                Choose a clear, descriptive name that users will recognize
+              </p>
               <input
                 type="text"
                 id="name"
@@ -231,10 +274,13 @@ export default function SubmitPage() {
                 value={formData.name}
                 onChange={handleChange}
                 maxLength={VALIDATION.NAME_MAX_LENGTH}
-                placeholder="My Application"
+                placeholder="e.g., Enterprise Analytics Dashboard"
                 className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
                 required
               />
+              <p className="mt-1 text-xs text-slate-500">
+                {formData.name.length}/{VALIDATION.NAME_MAX_LENGTH} characters
+              </p>
             </div>
 
             {/* Description */}
@@ -242,6 +288,9 @@ export default function SubmitPage() {
               <label htmlFor="description" className="block text-sm font-medium text-slate-200">
                 Description <span className="text-red-400">*</span>
               </label>
+              <p className="mt-1 text-xs text-slate-500">
+                Explain what your application does and who it&apos;s for. This appears on your app card.
+              </p>
               <textarea
                 id="description"
                 name="description"
@@ -249,13 +298,18 @@ export default function SubmitPage() {
                 onChange={handleChange}
                 maxLength={VALIDATION.DESCRIPTION_MAX_LENGTH}
                 rows={5}
-                placeholder="Describe what your application does and its key features..."
+                placeholder="e.g., A real-time analytics dashboard for enterprise teams to track metrics, visualize data, and make data-driven decisions. Built for high-scale operations with 70-85% lower infrastructure costs."
                 className="mt-2 w-full resize-none rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
                 required
               />
-              <p className="mt-1 text-xs text-slate-500">
-                {formData.description.length}/{VALIDATION.DESCRIPTION_MAX_LENGTH} characters
-              </p>
+              <div className="mt-1 flex items-center justify-between">
+                <p className="text-xs text-slate-500">
+                  Tip: Focus on benefits, not just features
+                </p>
+                <p className="text-xs text-slate-500">
+                  {formData.description.length}/{VALIDATION.DESCRIPTION_MAX_LENGTH}
+                </p>
+              </div>
             </div>
 
             {/* App URL */}
@@ -263,13 +317,16 @@ export default function SubmitPage() {
               <label htmlFor="appUrl" className="block text-sm font-medium text-slate-200">
                 Application URL <span className="text-red-400">*</span>
               </label>
+              <p className="mt-1 text-xs text-slate-500">
+                The live URL where users can access your application
+              </p>
               <input
                 type="url"
                 id="appUrl"
                 name="appUrl"
                 value={formData.appUrl}
                 onChange={handleChange}
-                placeholder="https://myapp.com"
+                placeholder="https://myapp.varity.so"
                 className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
                 required
               />
@@ -278,19 +335,22 @@ export default function SubmitPage() {
             {/* Logo URL */}
             <div>
               <label htmlFor="logoUrl" className="block text-sm font-medium text-slate-200">
-                Logo URL
+                Logo URL <span className="text-slate-500">(Optional)</span>
               </label>
+              <p className="mt-1 text-xs text-slate-500">
+                Your app&apos;s logo makes a strong first impression
+              </p>
               <input
                 type="url"
                 id="logoUrl"
                 name="logoUrl"
                 value={formData.logoUrl}
                 onChange={handleChange}
-                placeholder="https://example.com/logo.png"
+                placeholder="https://myapp.com/logo.png"
                 className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
               />
               <p className="mt-1 text-xs text-slate-500">
-                Recommended: Square image, minimum 256×256 pixels (PNG or SVG preferred)
+                Square image recommended (256×256px minimum). PNG with transparent background works best.
               </p>
             </div>
 
@@ -300,6 +360,9 @@ export default function SubmitPage() {
                 <label htmlFor="category" className="block text-sm font-medium text-slate-200">
                   Category <span className="text-red-400">*</span>
                 </label>
+                <p className="mt-1 text-xs text-slate-500">
+                  Help users find your app in the right category
+                </p>
                 <select
                   id="category"
                   name="category"
@@ -320,6 +383,9 @@ export default function SubmitPage() {
                 <label htmlFor="chainId" className="block text-sm font-medium text-slate-200">
                   Hosted Network
                 </label>
+                <p className="mt-1 text-xs text-slate-500">
+                  The blockchain network where your app is deployed
+                </p>
                 <select
                   id="chainId"
                   name="chainId"
@@ -339,8 +405,11 @@ export default function SubmitPage() {
             {/* GitHub URL */}
             <div>
               <label htmlFor="githubUrl" className="block text-sm font-medium text-slate-200">
-                GitHub Repository
+                GitHub Repository <span className="text-slate-500">(Optional)</span>
               </label>
+              <p className="mt-1 text-xs text-slate-500">
+                Open source? Share your repo to build trust with users
+              </p>
               <input
                 type="url"
                 id="githubUrl"
@@ -355,14 +424,17 @@ export default function SubmitPage() {
             {/* Screenshots */}
             <div>
               <label className="block text-sm font-medium text-slate-200">
-                Screenshots ({formData.screenshots.length}/{VALIDATION.MAX_SCREENSHOTS})
+                Screenshots <span className="text-slate-500">(Optional, {formData.screenshots.length}/{VALIDATION.MAX_SCREENSHOTS})</span>
               </label>
+              <p className="mt-1 text-xs text-slate-500">
+                Screenshots increase conversions by 3x. Show users what makes your app great.
+              </p>
               <div className="mt-2 flex gap-2">
                 <input
                   type="url"
                   value={screenshotInput}
                   onChange={(e) => setScreenshotInput(e.target.value)}
-                  placeholder="https://example.com/screenshot.png"
+                  placeholder="https://myapp.com/screenshot-1.png"
                   className="flex-1 rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
                   disabled={formData.screenshots.length >= VALIDATION.MAX_SCREENSHOTS}
                 />
@@ -397,18 +469,25 @@ export default function SubmitPage() {
             </div>
 
             {/* Built with Varity */}
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="builtWithVarity"
-                name="builtWithVarity"
-                checked={formData.builtWithVarity}
-                onChange={handleChange}
-                className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-slate-100 focus:ring-slate-600 focus:ring-offset-slate-900"
-              />
-              <label htmlFor="builtWithVarity" className="text-sm text-slate-300">
-                This application was built using the Varity SDK
-              </label>
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="builtWithVarity"
+                  name="builtWithVarity"
+                  checked={formData.builtWithVarity}
+                  onChange={handleChange}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-brand-500 focus:ring-brand-600 focus:ring-offset-slate-900"
+                />
+                <div className="flex-1">
+                  <label htmlFor="builtWithVarity" className="text-sm font-medium text-slate-200 cursor-pointer">
+                    Built with Varity SDK
+                  </label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Apps built with Varity SDK get a verified badge and priority placement in the marketplace
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Submit */}
