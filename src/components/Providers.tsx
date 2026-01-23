@@ -5,11 +5,10 @@ import { ThirdwebProvider } from "thirdweb/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { ToastProvider } from "@/contexts/ToastContext";
-import { GithubProvider } from "@/contexts/GithubContext";
 
 // Privy App ID - hardcoded for static export reliability
 // This is a public value (NEXT_PUBLIC_ prefix) so it's safe to include in client code
-const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cm6f5z5og0g91t0pbulwvf5o2";
+const PRIVY_APP_ID = "cm6f5z5og0g91t0pbulwvf5o2";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -62,9 +61,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThirdwebProvider>
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
-            <GithubProvider>
-              {children}
-            </GithubProvider>
+            {children}
           </ToastProvider>
         </QueryClientProvider>
       </ThirdwebProvider>
