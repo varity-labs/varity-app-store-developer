@@ -1,49 +1,35 @@
 "use client";
 
-import { usePrivy } from "@privy-io/react-auth";
-import { useState, useEffect } from "react";
+import { usePrivy, User } from "@privy-io/react-auth";
 
-// Hook to check Privy configuration at runtime (not build time)
-export function usePrivyConfigured(): boolean {
-  const [configured, setConfigured] = useState(true); // Assume configured initially
-
-  useEffect(() => {
-    // Check at runtime in browser
-    const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-    setConfigured(typeof appId === 'string' && appId.length > 0);
-  }, []);
-
-  return configured;
+/**
+ * Return type for the useAuth hook
+ */
+export interface UseAuthReturn {
+  /** Whether Privy has finished initializing */
+  ready: boolean;
+  /** Whether the user is currently authenticated */
+  authenticated: boolean;
+  /** Function to open the login modal */
+  login: () => void;
+  /** Function to log the user out */
+  logout: () => Promise<void>;
+  /** The current user object, or null if not authenticated */
+  user: User | null;
 }
 
-// Safe wrapper around usePrivy that handles cases where Privy context is not available
-export function useAuth() {
-  try {
-    const privy = usePrivy();
-    return {
-      ready: privy.ready,
-      authenticated: privy.authenticated,
-      login: privy.login,
-      logout: privy.logout,
-      user: privy.user,
-      privyConfigured: true,
-    };
-  } catch {
-    // Privy context not available (no valid app ID or during SSR)
-    return {
-      ready: true,
-      authenticated: false,
-      login: () => {
-        console.warn("Privy not configured. Set NEXT_PUBLIC_PRIVY_APP_ID.");
-        alert("Sign-in is temporarily unavailable. Please try again later.");
-      },
-      logout: () => {},
-      user: null,
-      privyConfigured: false,
-    };
-  }
-}
+/**
+ * A thin wrapper around usePrivy that provides authentication state and methods.
+ * This hook must be used within a PrivyProvider context.
+ */
+export function useAuth(): UseAuthReturn {
+  const { ready, authenticated, login, logout, user } = usePrivy();
 
-// For backwards compatibility - always return true to not disable buttons
-// The actual check happens via usePrivyConfigured hook or Privy's own error handling
-export const isPrivyConfigured = true;
+  return {
+    ready,
+    authenticated,
+    login,
+    logout,
+    user,
+  };
+}

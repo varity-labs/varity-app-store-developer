@@ -175,6 +175,13 @@ export const REGISTRY_ABI = [
     inputs: [{ name: "app_id", type: "uint64" }],
     outputs: [],
   },
+  {
+    name: "initialize",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
   // Events
   {
     name: "AppRegistered",
@@ -215,3 +222,6 @@ export const REGISTRY_ABI = [
     inputs: [{ name: "app_id", type: "uint64", indexed: true }],
   },
 ] as const;
+
+// Type export for the ABI
+export type RegistryABI = typeof REGISTRY_ABI;

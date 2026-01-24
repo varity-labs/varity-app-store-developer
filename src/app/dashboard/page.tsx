@@ -78,7 +78,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header with Stats */}
-      <div className="flex flex-col gap-6">
+      <header className="flex flex-col gap-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-slate-100">My Applications</h1>
@@ -89,18 +89,19 @@ export default function DashboardPage() {
           <Link
             href="/submit"
             className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-white shrink-0"
+            aria-label="Submit a new application"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
             New Application
           </Link>
         </div>
 
         {/* Stats Summary - only show if has apps */}
         {apps.length > 0 && (
-          <div className="flex flex-wrap gap-6">
+          <div className="flex flex-wrap gap-6" role="region" aria-label="Application statistics">
             <div className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-950/50">
-                <CheckCircle className="h-5 w-5 text-emerald-400" />
+                <CheckCircle className="h-5 w-5 text-emerald-400" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-lg font-semibold text-slate-100">{liveAppsCount}</div>
@@ -109,7 +110,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-950/50">
-                <Loader2 className="h-5 w-5 text-blue-400" />
+                <Loader2 className="h-5 w-5 text-blue-400" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-lg font-semibold text-slate-100">{pendingAppsCount}</div>
@@ -118,13 +119,13 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
-      </div>
+      </header>
 
       {/* Revenue Overview - only show if has approved apps */}
       {liveAppsCount > 0 && (
-        <div className="mt-8">
+        <section className="mt-8" aria-labelledby="revenue-heading">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-100">Revenue Overview</h2>
+            <h2 id="revenue-heading" className="text-lg font-semibold text-slate-100">Revenue Overview</h2>
             <span className="text-xs text-slate-500">70% revenue share</span>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -193,17 +194,18 @@ export default function DashboardPage() {
                     className="text-brand-400 hover:text-brand-300 inline-flex items-center gap-0.5"
                   >
                     block explorer
-                    <ArrowUpRight className="h-3 w-3" />
+                    <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
                   </a>
                 </p>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Apps list */}
-      <div className="mt-8">
+      <section className="mt-8" aria-labelledby="apps-heading">
+        <h2 id="apps-heading" className="sr-only">Your Applications</h2>
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
@@ -265,7 +267,7 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

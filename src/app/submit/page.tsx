@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2, Github, Star, Gi
 import { usePrivy, useLinkAccount, useOAuthTokens } from "@privy-io/react-auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useContract } from "@/hooks/useContract";
-import { GitHubRepo, formatRelativeTime, getLanguageColor } from "@/hooks/useGithub";
+import { GitHubRepo, formatRelativeTime, getLanguageColor } from "@/lib/github";
 import { APP_CATEGORIES, VALIDATION } from "@/lib/constants";
 import { varityL3 } from "@/lib/thirdweb";
 
@@ -21,6 +21,16 @@ interface FormData {
   builtWithVarity: boolean;
   githubUrl: string;
   screenshots: string[];
+  // Company Information
+  companyName: string;
+  websiteUrl: string;
+  // Social Links
+  twitterHandle: string;
+  linkedinUrl: string;
+  // Legal Documents
+  privacyPolicyUrl: string;
+  supportEmail: string;
+  termsOfServiceUrl: string;
 }
 
 const initialFormData: FormData = {
@@ -33,6 +43,38 @@ const initialFormData: FormData = {
   builtWithVarity: true,
   githubUrl: "",
   screenshots: [],
+  // Company Information
+  companyName: "",
+  websiteUrl: "",
+  // Social Links
+  twitterHandle: "",
+  linkedinUrl: "",
+  // Legal Documents
+  privacyPolicyUrl: "",
+  supportEmail: "",
+  termsOfServiceUrl: "",
+};
+
+// Validation helpers
+const isValidUrl = (url: string): boolean => {
+  if (!url) return true; // Empty is valid (fields are optional)
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isValidEmail = (email: string): boolean => {
+  if (!email) return true; // Empty is valid (field is optional)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const formatTwitterHandle = (handle: string): string => {
+  // Remove @ if user included it
+  return handle.startsWith("@") ? handle.slice(1) : handle;
 };
 
 export default function SubmitPage() {
@@ -175,6 +217,29 @@ export default function SubmitPage() {
       return;
     }
 
+    // Validate optional URL fields
+    const urlFields = [
+      { name: "Website URL", value: formData.websiteUrl },
+      { name: "LinkedIn URL", value: formData.linkedinUrl },
+      { name: "Privacy Policy URL", value: formData.privacyPolicyUrl },
+      { name: "Terms of Service URL", value: formData.termsOfServiceUrl },
+    ];
+
+    for (const field of urlFields) {
+      if (field.value && !isValidUrl(field.value)) {
+        setErrorMessage(`Please enter a valid URL for ${field.name}.`);
+        setSubmitStatus("error");
+        return;
+      }
+    }
+
+    // Validate email
+    if (formData.supportEmail && !isValidEmail(formData.supportEmail)) {
+      setErrorMessage("Please enter a valid email address for Support Email.");
+      setSubmitStatus("error");
+      return;
+    }
+
     // Reset previous state
     resetState();
     setSubmitStatus("idle");
@@ -205,6 +270,16 @@ export default function SubmitPage() {
             built_with_varity: formData.builtWithVarity ? "Yes" : "No",
             screenshots: formData.screenshots.length > 0 ? formData.screenshots.join(", ") : "None",
             developer_address: account,
+            // Company Information
+            company_name: formData.companyName || "Not provided",
+            website_url: formData.websiteUrl || "Not provided",
+            // Social Links
+            twitter_handle: formData.twitterHandle ? `@${formatTwitterHandle(formData.twitterHandle)}` : "Not provided",
+            linkedin_url: formData.linkedinUrl || "Not provided",
+            // Legal Documents
+            privacy_policy_url: formData.privacyPolicyUrl || "Not provided",
+            support_email: formData.supportEmail || "Not provided",
+            terms_of_service_url: formData.termsOfServiceUrl || "Not provided",
           }),
         });
 
@@ -218,10 +293,31 @@ export default function SubmitPage() {
         // Continue anyway - email failure shouldn't block submission
       }
 
-      // STEP 2: Call smart contract to register app
+      // STEP 2: Prepare metadata JSON for additional fields
+      const metadata = {
+        companyName: formData.companyName || undefined,
+        websiteUrl: formData.websiteUrl || undefined,
+        twitterHandle: formData.twitterHandle ? formatTwitterHandle(formData.twitterHandle) : undefined,
+        linkedinUrl: formData.linkedinUrl || undefined,
+        privacyPolicyUrl: formData.privacyPolicyUrl || undefined,
+        supportEmail: formData.supportEmail || undefined,
+        termsOfServiceUrl: formData.termsOfServiceUrl || undefined,
+      };
+
+      // Filter out undefined values
+      const cleanMetadata = Object.fromEntries(
+        Object.entries(metadata).filter(([, v]) => v !== undefined)
+      );
+
+      // Append metadata to description if there are any extra fields
+      const descriptionWithMetadata = Object.keys(cleanMetadata).length > 0
+        ? `${formData.description}\n\n<!-- VARITY_METADATA:${JSON.stringify(cleanMetadata)} -->`
+        : formData.description;
+
+      // STEP 3: Call smart contract to register app
       const result = await registerApp({
         name: formData.name,
-        description: formData.description,
+        description: descriptionWithMetadata,
         appUrl: formData.appUrl,
         logoUrl: formData.logoUrl,
         category: formData.category,
@@ -248,30 +344,30 @@ export default function SubmitPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Back link */}
-      <div className="border-b border-slate-800/50">
+      {/* Navigation breadcrumb */}
+      <nav className="border-b border-slate-800/50" aria-label="Breadcrumb">
         <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 lg:px-8">
           <Link
             href="/"
             className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-slate-200"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to Browse
           </Link>
         </div>
-      </div>
+      </nav>
 
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-10">
+        <header className="mb-10">
           <h1 className="text-display-sm text-foreground">Submit Your Application</h1>
           <p className="mt-3 text-body-md text-foreground-secondary max-w-2xl">
             Join the growing ecosystem of verified applications. Your app will be reviewed within 48 hours and discoverable by enterprise customers worldwide.
           </p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/5 px-4 py-1.5 text-xs text-brand-400">
-            <CheckCircle className="h-3.5 w-3.5" />
+            <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Average approval time: 24 hours</span>
           </div>
-        </div>
+        </header>
 
         {/* Success message */}
         {submitStatus === "success" && (
@@ -617,6 +713,152 @@ export default function SubmitPage() {
                   ))}
                 </ul>
               )}
+            </div>
+
+            {/* Company Information Section */}
+            <div className="border-t border-slate-800/50 pt-6">
+              <h3 className="text-sm font-medium text-slate-200 mb-1">Company Information</h3>
+              <p className="text-xs text-slate-500 mb-4">Help users learn more about your organization</p>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                {/* Company Name */}
+                <div>
+                  <label htmlFor="companyName" className="block text-sm font-medium text-slate-200">
+                    Company Name <span className="text-amber-500 text-xs">(Recommended)</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="companyName"
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    placeholder="e.g., Acme Inc."
+                    className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                  />
+                </div>
+
+                {/* Website URL */}
+                <div>
+                  <label htmlFor="websiteUrl" className="block text-sm font-medium text-slate-200">
+                    Website URL <span className="text-amber-500 text-xs">(Recommended)</span>
+                  </label>
+                  <input
+                    type="url"
+                    id="websiteUrl"
+                    name="websiteUrl"
+                    value={formData.websiteUrl}
+                    onChange={handleChange}
+                    placeholder="https://yourcompany.com"
+                    className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Social Links Section */}
+            <div className="border-t border-slate-800/50 pt-6">
+              <h3 className="text-sm font-medium text-slate-200 mb-1">Social Links</h3>
+              <p className="text-xs text-slate-500 mb-4">Connect with your users on social platforms</p>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                {/* Twitter Handle */}
+                <div>
+                  <label htmlFor="twitterHandle" className="block text-sm font-medium text-slate-200">
+                    Twitter Handle <span className="text-amber-500 text-xs">(Recommended)</span>
+                  </label>
+                  <div className="mt-2 flex">
+                    <span className="inline-flex items-center rounded-l-md border border-r-0 border-slate-800 bg-slate-800 px-3 text-sm text-slate-400">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      id="twitterHandle"
+                      name="twitterHandle"
+                      value={formData.twitterHandle}
+                      onChange={handleChange}
+                      placeholder="yourcompany"
+                      className="w-full rounded-r-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                    />
+                  </div>
+                </div>
+
+                {/* LinkedIn URL */}
+                <div>
+                  <label htmlFor="linkedinUrl" className="block text-sm font-medium text-slate-200">
+                    LinkedIn URL <span className="text-amber-500 text-xs">(Recommended)</span>
+                  </label>
+                  <input
+                    type="url"
+                    id="linkedinUrl"
+                    name="linkedinUrl"
+                    value={formData.linkedinUrl}
+                    onChange={handleChange}
+                    placeholder="https://linkedin.com/company/yourcompany"
+                    className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Legal Documents Section */}
+            <div className="border-t border-slate-800/50 pt-6">
+              <h3 className="text-sm font-medium text-slate-200 mb-1">Legal Documents</h3>
+              <p className="text-xs text-slate-500 mb-4">Build trust with transparency about your policies</p>
+
+              <div className="space-y-4">
+                {/* Support Email */}
+                <div>
+                  <label htmlFor="supportEmail" className="block text-sm font-medium text-slate-200">
+                    Support Email <span className="text-amber-500 text-xs">(Recommended)</span>
+                  </label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Where users can reach you for support
+                  </p>
+                  <input
+                    type="email"
+                    id="supportEmail"
+                    name="supportEmail"
+                    value={formData.supportEmail}
+                    onChange={handleChange}
+                    placeholder="support@yourcompany.com"
+                    className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                  />
+                </div>
+
+                <div className="grid gap-6 sm:grid-cols-2">
+                  {/* Privacy Policy URL */}
+                  <div>
+                    <label htmlFor="privacyPolicyUrl" className="block text-sm font-medium text-slate-200">
+                      Privacy Policy URL <span className="text-amber-500 text-xs">(Recommended)</span>
+                    </label>
+                    <input
+                      type="url"
+                      id="privacyPolicyUrl"
+                      name="privacyPolicyUrl"
+                      value={formData.privacyPolicyUrl}
+                      onChange={handleChange}
+                      placeholder="https://yourcompany.com/privacy"
+                      className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                    />
+                  </div>
+
+                  {/* Terms of Service URL */}
+                  <div>
+                    <label htmlFor="termsOfServiceUrl" className="block text-sm font-medium text-slate-200">
+                      Terms of Service URL <span className="text-amber-500 text-xs">(Recommended)</span>
+                    </label>
+                    <input
+                      type="url"
+                      id="termsOfServiceUrl"
+                      name="termsOfServiceUrl"
+                      value={formData.termsOfServiceUrl}
+                      onChange={handleChange}
+                      placeholder="https://yourcompany.com/terms"
+                      className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Built with Varity */}

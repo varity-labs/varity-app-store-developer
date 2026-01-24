@@ -5,6 +5,7 @@ import { ThirdwebProvider } from "thirdweb/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { ToastProvider } from "@/contexts/ToastContext";
+import { GithubProvider } from "@/contexts/GithubContext";
 
 // Privy App ID - same for all Varity apps (app store and packages)
 const PRIVY_APP_ID = "cmhwbozxu004fjr0cicfz0tf8";
@@ -41,7 +42,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThirdwebProvider>
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
-            {children}
+            <GithubProvider>
+              {children}
+            </GithubProvider>
           </ToastProvider>
         </QueryClientProvider>
       </ThirdwebProvider>

@@ -559,12 +559,12 @@ export default function AdminPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <div>
+      <header>
         <h1 className="text-2xl font-semibold text-slate-100">Admin Dashboard</h1>
         <p className="mt-1 text-sm text-slate-500">
           Review, approve, and manage application submissions to maintain marketplace quality.
         </p>
-      </div>
+      </header>
 
       {/* Initialize Contract Button (one-time setup) */}
       {authenticated && !isCheckingAdmin && !isAdmin && (
@@ -633,24 +633,27 @@ export default function AdminPage() {
       )}
 
       {/* Stats */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-4">
-        <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-          <p className="text-sm text-slate-500">Pending Review</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-100">{pendingApps.length}</p>
+      <section className="mt-6" aria-labelledby="stats-heading">
+        <h2 id="stats-heading" className="sr-only">Review Statistics</h2>
+        <div className="grid gap-4 sm:grid-cols-4">
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+            <p className="text-sm text-slate-500">Pending Review</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-100">{pendingApps.length}</p>
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+            <p className="text-sm text-slate-500">Reviewed Today</p>
+            <p className="mt-1 text-2xl font-semibold text-emerald-400">{reviewedToday}</p>
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+            <p className="text-sm text-slate-500">Approved Today</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-100">{approvedToday}</p>
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+            <p className="text-sm text-slate-500">Total Apps</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-100">{totalApps}</p>
+          </div>
         </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-          <p className="text-sm text-slate-500">Reviewed Today</p>
-          <p className="mt-1 text-2xl font-semibold text-emerald-400">{reviewedToday}</p>
-        </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-          <p className="text-sm text-slate-500">Approved Today</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-100">{approvedToday}</p>
-        </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-          <p className="text-sm text-slate-500">Total Apps</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-100">{totalApps}</p>
-        </div>
-      </div>
+      </section>
 
       {/* Search and Filters */}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

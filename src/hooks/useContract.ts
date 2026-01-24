@@ -1,177 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { getContract, readContract, prepareContractCall, sendTransaction } from "thirdweb";
 import { useActiveAccount } from "thirdweb/react";
 import { thirdwebClient, varityL3 } from "@/lib/thirdweb";
 import type { AppData } from "@/lib/constants";
-import { handleTransactionError } from "@/lib/transactions";
+import { handleTransactionError, waitForTransaction } from "@/lib/transactions";
+import { REGISTRY_ABI, VARITY_APP_REGISTRY_ADDRESS } from "@/lib/contracts";
 
-// Contract address on Varity L3
-const CONTRACT_ADDRESS = "0x3faa42a8639fcb076160d553e8d6e05add7d97a5";
-
-// Contract ABI for read functions
-const CONTRACT_ABI = [
-  // get_app(app_id: u64) -> (u64, string, string, string, string, string, u64, address, bool, bool, u64, bool, string, u64)
-  {
-    type: "function",
-    name: "getApp",
-    inputs: [{ name: "app_id", type: "uint64" }],
-    outputs: [
-      { name: "id", type: "uint64" },
-      { name: "name", type: "string" },
-      { name: "description", type: "string" },
-      { name: "app_url", type: "string" },
-      { name: "logo_url", type: "string" },
-      { name: "category", type: "string" },
-      { name: "chain_id", type: "uint64" },
-      { name: "developer", type: "address" },
-      { name: "is_active", type: "bool" },
-      { name: "is_approved", type: "bool" },
-      { name: "created_at", type: "uint64" },
-      { name: "built_with_varity", type: "bool" },
-      { name: "github_url", type: "string" },
-      { name: "screenshot_count", type: "uint64" },
-    ],
-    stateMutability: "view",
-  },
-  // get_all_apps(max_results: u64) -> Vec<u64>
-  {
-    type: "function",
-    name: "getAllApps",
-    inputs: [{ name: "max_results", type: "uint64" }],
-    outputs: [{ name: "app_ids", type: "uint64[]" }],
-    stateMutability: "view",
-  },
-  // get_apps_by_developer(developer: address, max_results: u64) -> Vec<u64>
-  {
-    type: "function",
-    name: "getAppsByDeveloper",
-    inputs: [
-      { name: "developer", type: "address" },
-      { name: "max_results", type: "uint64" },
-    ],
-    outputs: [{ name: "app_ids", type: "uint64[]" }],
-    stateMutability: "view",
-  },
-  // get_pending_apps(max_results: u64) -> Vec<u64>
-  {
-    type: "function",
-    name: "getPendingApps",
-    inputs: [{ name: "max_results", type: "uint64" }],
-    outputs: [{ name: "app_ids", type: "uint64[]" }],
-    stateMutability: "view",
-  },
-  // get_app_screenshot(app_id: u64, index: u64) -> string
-  {
-    type: "function",
-    name: "getAppScreenshot",
-    inputs: [
-      { name: "app_id", type: "uint64" },
-      { name: "index", type: "uint64" },
-    ],
-    outputs: [{ name: "url", type: "string" }],
-    stateMutability: "view",
-  },
-  // is_admin(address: address) -> bool
-  {
-    type: "function",
-    name: "isAdmin",
-    inputs: [{ name: "address", type: "address" }],
-    outputs: [{ name: "is_admin", type: "bool" }],
-    stateMutability: "view",
-  },
-  // get_total_apps() -> u64
-  {
-    type: "function",
-    name: "getTotalApps",
-    inputs: [],
-    outputs: [{ name: "total", type: "uint64" }],
-    stateMutability: "view",
-  },
-  // register_app - write function
-  {
-    type: "function",
-    name: "registerApp",
-    inputs: [
-      { name: "name", type: "string" },
-      { name: "description", type: "string" },
-      { name: "app_url", type: "string" },
-      { name: "logo_url", type: "string" },
-      { name: "category", type: "string" },
-      { name: "chain_id", type: "uint256" },
-      { name: "built_with_varity", type: "bool" },
-      { name: "github_url", type: "string" },
-      { name: "screenshot_urls", type: "string[]" },
-    ],
-    outputs: [{ name: "app_id", type: "uint64" }],
-    stateMutability: "nonpayable",
-  },
-  // approve_app - write function
-  {
-    type: "function",
-    name: "approveApp",
-    inputs: [{ name: "app_id", type: "uint64" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  // reject_app - write function
-  {
-    type: "function",
-    name: "rejectApp",
-    inputs: [
-      { name: "app_id", type: "uint64" },
-      { name: "reason", type: "string" },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  // feature_app - write function
-  {
-    type: "function",
-    name: "featureApp",
-    inputs: [{ name: "app_id", type: "uint64" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  // update_app - write function
-  {
-    type: "function",
-    name: "updateApp",
-    inputs: [
-      { name: "app_id", type: "uint64" },
-      { name: "description", type: "string" },
-      { name: "app_url", type: "string" },
-      { name: "screenshot_urls", type: "string[]" },
-    ],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  // deactivate_app - write function
-  {
-    type: "function",
-    name: "deactivateApp",
-    inputs: [{ name: "app_id", type: "uint64" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  // initialize - one-time setup function
-  {
-    type: "function",
-    name: "initialize",
-    inputs: [],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-] as const;
-
-// Get contract instance
+// Get contract instance using the centralized ABI and address
 function getContractInstance() {
   return getContract({
     client: thirdwebClient,
-    address: CONTRACT_ADDRESS,
+    address: VARITY_APP_REGISTRY_ADDRESS,
     chain: varityL3,
-    abi: CONTRACT_ABI,
+    abi: REGISTRY_ABI,
   });
 }
 
@@ -213,6 +56,7 @@ function parseAppData(
 /**
  * Hook for reading and writing to contract
  * Uses thirdweb v5 function-based API
+ * Method names use snake_case to match the Stylus/Rust contract ABI
  */
 export function useContract() {
   const contract = getContractInstance();
@@ -231,12 +75,11 @@ export function useContract() {
       try {
         const result = await readContract({
           contract,
-          method: "getApp",
+          method: "get_app",
           params: [appId],
         });
 
         const [
-          id,
           name,
           description,
           appUrl,
@@ -250,10 +93,10 @@ export function useContract() {
           builtWithVarity,
           githubUrl,
           screenshotCount,
-        ] = result as [bigint, string, string, string, string, string, bigint, string, boolean, boolean, bigint, boolean, string, bigint];
+        ] = result as [string, string, string, string, string, bigint, string, boolean, boolean, bigint, boolean, string, bigint];
 
         return parseAppData(
-          id,
+          appId, // Use the passed appId since get_app doesn't return id in outputs
           name,
           description,
           appUrl,
@@ -285,7 +128,7 @@ export function useContract() {
         // Get app IDs
         const appIds = await readContract({
           contract,
-          method: "getAllApps",
+          method: "get_all_apps",
           params: [BigInt(maxResults)],
         });
 
@@ -317,7 +160,7 @@ export function useContract() {
         // Get app IDs for developer
         const appIds = await readContract({
           contract,
-          method: "getAppsByDeveloper",
+          method: "get_apps_by_developer",
           params: [developerAddress as `0x${string}`, BigInt(maxResults)],
         });
 
@@ -349,7 +192,7 @@ export function useContract() {
         // Get pending app IDs
         const appIds = await readContract({
           contract,
-          method: "getPendingApps",
+          method: "get_pending_apps",
           params: [BigInt(maxResults)],
         });
 
@@ -382,7 +225,7 @@ export function useContract() {
           Array.from({ length: screenshotCount }, (_, i) =>
             readContract({
               contract,
-              method: "getAppScreenshot",
+              method: "get_app_screenshot",
               params: [appId, BigInt(i)],
             })
           )
@@ -405,7 +248,7 @@ export function useContract() {
       try {
         const result = await readContract({
           contract,
-          method: "isAdmin",
+          method: "is_admin",
           params: [address as `0x${string}`],
         });
 
@@ -425,7 +268,7 @@ export function useContract() {
     try {
       const result = await readContract({
         contract,
-        method: "getTotalApps",
+        method: "get_total_apps",
         params: [],
       });
 
@@ -469,7 +312,7 @@ export function useContract() {
         // Prepare the contract call
         const transaction = prepareContractCall({
           contract,
-          method: "registerApp",
+          method: "register_app",
           params: [
             appData.name,
             appData.description,
@@ -490,8 +333,16 @@ export function useContract() {
         });
 
         setTxHash(result.transactionHash);
+
+        // Wait for transaction confirmation
+        const receipt = await waitForTransaction(
+          thirdwebClient,
+          varityL3,
+          result.transactionHash as `0x${string}`
+        );
+
         setIsLoading(false);
-        return result;
+        return { ...result, receipt };
       } catch (err) {
         const errorMessage = handleTransactionError(err);
         setError(errorMessage);
@@ -505,7 +356,7 @@ export function useContract() {
   /**
    * Approve an app (admin only)
    * @param appId - ID of the app to approve
-   * @returns Transaction result
+   * @returns Transaction result with receipt
    */
   const approveApp = useCallback(
     async (appId: bigint) => {
@@ -520,7 +371,7 @@ export function useContract() {
       try {
         const transaction = prepareContractCall({
           contract,
-          method: "approveApp",
+          method: "approve_app",
           params: [appId],
         });
 
@@ -530,8 +381,16 @@ export function useContract() {
         });
 
         setTxHash(result.transactionHash);
+
+        // Wait for transaction confirmation
+        const receipt = await waitForTransaction(
+          thirdwebClient,
+          varityL3,
+          result.transactionHash as `0x${string}`
+        );
+
         setIsLoading(false);
-        return result;
+        return { ...result, receipt };
       } catch (err) {
         const errorMessage = handleTransactionError(err);
         setError(errorMessage);
@@ -546,7 +405,7 @@ export function useContract() {
    * Reject an app (admin only)
    * @param appId - ID of the app to reject
    * @param reason - Reason for rejection
-   * @returns Transaction result
+   * @returns Transaction result with receipt
    */
   const rejectApp = useCallback(
     async (appId: bigint, reason: string) => {
@@ -561,7 +420,7 @@ export function useContract() {
       try {
         const transaction = prepareContractCall({
           contract,
-          method: "rejectApp",
+          method: "reject_app",
           params: [appId, reason],
         });
 
@@ -571,8 +430,16 @@ export function useContract() {
         });
 
         setTxHash(result.transactionHash);
+
+        // Wait for transaction confirmation
+        const receipt = await waitForTransaction(
+          thirdwebClient,
+          varityL3,
+          result.transactionHash as `0x${string}`
+        );
+
         setIsLoading(false);
-        return result;
+        return { ...result, receipt };
       } catch (err) {
         const errorMessage = handleTransactionError(err);
         setError(errorMessage);
@@ -589,7 +456,7 @@ export function useContract() {
    * @param description - Updated description
    * @param appUrl - Updated app URL
    * @param screenshots - Updated screenshot URLs
-   * @returns Transaction result
+   * @returns Transaction result with receipt
    */
   const updateApp = useCallback(
     async (
@@ -609,7 +476,7 @@ export function useContract() {
       try {
         const transaction = prepareContractCall({
           contract,
-          method: "updateApp",
+          method: "update_app",
           params: [appId, description, appUrl, screenshots],
         });
 
@@ -619,8 +486,16 @@ export function useContract() {
         });
 
         setTxHash(result.transactionHash);
+
+        // Wait for transaction confirmation
+        const receipt = await waitForTransaction(
+          thirdwebClient,
+          varityL3,
+          result.transactionHash as `0x${string}`
+        );
+
         setIsLoading(false);
-        return result;
+        return { ...result, receipt };
       } catch (err) {
         const errorMessage = handleTransactionError(err);
         setError(errorMessage);
@@ -634,7 +509,7 @@ export function useContract() {
   /**
    * Deactivate an app (developer only)
    * @param appId - ID of the app to deactivate
-   * @returns Transaction result
+   * @returns Transaction result with receipt
    */
   const deactivateApp = useCallback(
     async (appId: bigint) => {
@@ -649,7 +524,7 @@ export function useContract() {
       try {
         const transaction = prepareContractCall({
           contract,
-          method: "deactivateApp",
+          method: "deactivate_app",
           params: [appId],
         });
 
@@ -659,8 +534,16 @@ export function useContract() {
         });
 
         setTxHash(result.transactionHash);
+
+        // Wait for transaction confirmation
+        const receipt = await waitForTransaction(
+          thirdwebClient,
+          varityL3,
+          result.transactionHash as `0x${string}`
+        );
+
         setIsLoading(false);
-        return result;
+        return { ...result, receipt };
       } catch (err) {
         const errorMessage = handleTransactionError(err);
         setError(errorMessage);
@@ -674,7 +557,7 @@ export function useContract() {
   /**
    * Feature an app (admin only)
    * @param appId - ID of the app to feature
-   * @returns Transaction result
+   * @returns Transaction result with receipt
    */
   const featureApp = useCallback(
     async (appId: bigint) => {
@@ -689,7 +572,7 @@ export function useContract() {
       try {
         const transaction = prepareContractCall({
           contract,
-          method: "featureApp",
+          method: "feature_app",
           params: [appId],
         });
 
@@ -699,8 +582,16 @@ export function useContract() {
         });
 
         setTxHash(result.transactionHash);
+
+        // Wait for transaction confirmation
+        const receipt = await waitForTransaction(
+          thirdwebClient,
+          varityL3,
+          result.transactionHash as `0x${string}`
+        );
+
         setIsLoading(false);
-        return result;
+        return { ...result, receipt };
       } catch (err) {
         const errorMessage = handleTransactionError(err);
         setError(errorMessage);
@@ -723,6 +614,7 @@ export function useContract() {
   /**
    * Initialize contract (one-time setup)
    * Sets deployer as first admin
+   * @returns Transaction result with receipt
    */
   const initialize = useCallback(async () => {
     if (!account) {
@@ -746,8 +638,16 @@ export function useContract() {
       });
 
       setTxHash(result.transactionHash);
+
+      // Wait for transaction confirmation
+      const receipt = await waitForTransaction(
+        thirdwebClient,
+        varityL3,
+        result.transactionHash as `0x${string}`
+      );
+
       setIsLoading(false);
-      return result;
+      return { ...result, receipt };
     } catch (err) {
       const errorMessage = handleTransactionError(err);
       setError(errorMessage);

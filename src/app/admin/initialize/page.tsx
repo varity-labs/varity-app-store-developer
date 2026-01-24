@@ -51,12 +51,12 @@ export default function InitializePage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-8">
+      <header className="mb-8">
         <h1 className="text-2xl font-semibold text-slate-100">Initialize Contract</h1>
         <p className="mt-2 text-sm text-slate-500">
           This is a one-time setup that sets the deployer as the first admin.
         </p>
-      </div>
+      </header>
 
       {/* Success message */}
       {status === "success" && (
@@ -101,23 +101,23 @@ export default function InitializePage() {
       )}
 
       {/* Contract info */}
-      <div className="mb-6 rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-        <h2 className="text-lg font-medium text-slate-100">Contract Information</h2>
-        <div className="mt-4 space-y-3 text-sm">
+      <section className="mb-6 rounded-lg border border-slate-800 bg-slate-900/50 p-6" aria-labelledby="contract-info-heading">
+        <h2 id="contract-info-heading" className="text-lg font-medium text-slate-100">Contract Information</h2>
+        <dl className="mt-4 space-y-3 text-sm">
           <div>
-            <span className="text-slate-500">Contract Address:</span>
-            <p className="mt-1 font-mono text-slate-300">0x3faa42a8639fcb076160d553e8d6e05add7d97a5</p>
+            <dt className="text-slate-500">Contract Address:</dt>
+            <dd className="mt-1 font-mono text-slate-300">0x3faa42a8639fcb076160d553e8d6e05add7d97a5</dd>
           </div>
           <div>
-            <span className="text-slate-500">Network:</span>
-            <p className="mt-1 text-slate-300">Varity L3 Testnet (Chain ID: 33529)</p>
+            <dt className="text-slate-500">Network:</dt>
+            <dd className="mt-1 text-slate-300">Varity L3 Testnet (Chain ID: 33529)</dd>
           </div>
           <div>
-            <span className="text-slate-500">Your Wallet:</span>
-            <p className="mt-1 font-mono text-slate-300">{account?.address || "Not connected"}</p>
+            <dt className="text-slate-500">Your Wallet:</dt>
+            <dd className="mt-1 font-mono text-slate-300">{account?.address || "Not connected"}</dd>
           </div>
-        </div>
-      </div>
+        </dl>
+      </section>
 
       {/* Warning */}
       <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-900 bg-amber-950/50 p-4">

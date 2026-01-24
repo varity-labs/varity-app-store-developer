@@ -4,8 +4,9 @@
  */
 
 import { estimateGas, waitForReceipt } from "thirdweb";
-import type { PreparedTransaction } from "thirdweb";
+import type { PreparedTransaction, ThirdwebClient, Chain } from "thirdweb";
 import type { Account } from "thirdweb/wallets";
+import type { TransactionReceipt } from "thirdweb/transaction";
 
 /**
  * Estimate gas for a transaction
@@ -34,21 +35,68 @@ export async function estimateTransactionGas(
  * @returns Transaction receipt
  */
 export async function waitForTransaction(
-  client: any,
-  chain: any,
+  client: ThirdwebClient,
+  chain: Chain,
   transactionHash: `0x${string}`
-) {
+): Promise<TransactionReceipt> {
   try {
     const receipt = await waitForReceipt({
       client,
       chain,
-      transactionHash: transactionHash as `0x${string}`,
+      transactionHash,
     });
     return receipt;
   } catch (error) {
     console.error("Transaction confirmation failed:", error);
     throw new Error("Transaction failed to confirm. Please check the explorer.");
   }
+}
+
+/**
+ * Wait for transaction confirmation with retry mechanism
+ * @param client - Thirdweb client
+ * @param chain - Chain configuration
+ * @param transactionHash - Transaction hash
+ * @param options - Retry options
+ * @returns Transaction receipt
+ */
+export async function waitForTransactionWithRetry(
+  client: ThirdwebClient,
+  chain: Chain,
+  transactionHash: `0x${string}`,
+  options?: { maxRetries?: number; retryDelay?: number }
+): Promise<TransactionReceipt> {
+  const maxRetries = options?.maxRetries ?? 3;
+  const retryDelay = options?.retryDelay ?? 2000; // 2 seconds default
+
+  let lastError: Error | undefined;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const receipt = await waitForReceipt({
+        client,
+        chain,
+        transactionHash,
+      });
+      return receipt;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(
+        `Transaction confirmation attempt ${attempt + 1}/${maxRetries + 1} failed:`,
+        error
+      );
+
+      // Don't wait after the last attempt
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      }
+    }
+  }
+
+  console.error("All transaction confirmation attempts failed:", lastError);
+  throw new Error(
+    "Transaction failed to confirm after multiple attempts. Please check the explorer."
+  );
 }
 
 /**
