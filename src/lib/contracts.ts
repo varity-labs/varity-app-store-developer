@@ -4,7 +4,8 @@ import { thirdwebClient, varityL3 } from "./thirdweb";
 
 // Contract address - hardcoded for static export reliability
 // Deployed on Varity L3 Testnet (Chain ID: 33529)
-export const VARITY_APP_REGISTRY_ADDRESS = (process.env.NEXT_PUBLIC_VARITY_REGISTRY_ADDRESS || "0x3faa42a8639fcb076160d553e8d6e05add7d97a5") as `0x${string}`;
+// Deployer wallet: 0x20B7d1426649D9a573ba7Fd10592456264220cbF
+export const VARITY_APP_REGISTRY_ADDRESS = (process.env.NEXT_PUBLIC_VARITY_REGISTRY_ADDRESS || "0x52d4f28ebe20fad743bbef9daa61bfe3ce91eb74") as `0x${string}`;
 
 // Get the VarityAppRegistry contract instance
 export function getRegistryContract() {
