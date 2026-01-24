@@ -6,8 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { ToastProvider } from "@/contexts/ToastContext";
 
-// Privy App ID - same as user portal for consistent auth
-const PRIVY_APP_ID = "cm6f5z5og0g91t0pbulwvf5o2";
+// Privy App ID - same for all Varity apps (app store and packages)
+const PRIVY_APP_ID = "cmhwbozxu004fjr0cicfz0tf8";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
