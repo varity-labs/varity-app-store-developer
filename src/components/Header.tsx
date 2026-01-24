@@ -139,15 +139,7 @@ export function Header() {
             {/* Right Side - CTAs */}
             <div className="flex items-center gap-3">
               <div className="hidden md:flex items-center gap-2">
-                {ready && !authenticated ? (
-                  <button
-                    onClick={login}
-                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-all duration-200 ease-out h-10 px-5 py-2 bg-brand-500 text-slate-950 hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.5),0_0_40px_rgba(20,184,166,0.3)]"
-                  >
-                    Sign In
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                ) : ready && authenticated ? (
+                {authenticated ? (
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-foreground-secondary">
                       {displayName}
@@ -160,7 +152,13 @@ export function Header() {
                     </button>
                   </div>
                 ) : (
-                  <div className="h-10 w-24 rounded-md skeleton-shimmer" />
+                  <button
+                    onClick={login}
+                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-all duration-200 ease-out h-10 px-5 py-2 bg-brand-500 text-slate-950 hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.5),0_0_40px_rgba(20,184,166,0.3)]"
+                  >
+                    Sign In
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 )}
               </div>
 
@@ -229,7 +227,17 @@ export function Header() {
               )}
 
               <div className="flex flex-col gap-3 pt-4 border-t border-border">
-                {ready && !authenticated ? (
+                {authenticated ? (
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-base font-medium transition-all duration-200 border border-border bg-transparent text-foreground hover:bg-background-quaternary h-12 px-8"
+                  >
+                    Sign Out
+                  </button>
+                ) : (
                   <button
                     onClick={() => {
                       login();
@@ -239,16 +247,6 @@ export function Header() {
                   >
                     Sign In
                     <ArrowRight className="h-5 w-5" />
-                  </button>
-                ) : ready && authenticated && (
-                  <button
-                    onClick={() => {
-                      logout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-base font-medium transition-all duration-200 border border-border bg-transparent text-foreground hover:bg-background-quaternary h-12 px-8"
-                  >
-                    Sign Out
                   </button>
                 )}
               </div>

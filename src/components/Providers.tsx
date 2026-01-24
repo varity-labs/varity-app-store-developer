@@ -3,11 +3,10 @@
 import { PrivyProvider } from "@privy-io/react-auth";
 import { ThirdwebProvider } from "thirdweb/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ToastProvider } from "@/contexts/ToastContext";
 
-// Privy App ID - hardcoded for static export reliability
-// This is a public value (NEXT_PUBLIC_ prefix) so it's safe to include in client code
+// Privy App ID - same as user portal for consistent auth
 const PRIVY_APP_ID = "cm6f5z5og0g91t0pbulwvf5o2";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -16,30 +15,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1 minute
+            staleTime: 60 * 1000,
           },
         },
       })
   );
-
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Render children without Privy during SSR or if no valid app ID
-  if (!mounted || !PRIVY_APP_ID) {
-    return (
-      <ThirdwebProvider>
-        <QueryClientProvider client={queryClient}>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </QueryClientProvider>
-      </ThirdwebProvider>
-    );
-  }
 
   return (
     <PrivyProvider
@@ -47,7 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       config={{
         appearance: {
           theme: "dark",
-          accentColor: "#14B8A6", // Varity brand teal
+          accentColor: "#14B8A6",
           logo: "/logo/varity-logo-color.svg",
         },
         loginMethods: ["email", "wallet", "google", "github"],
