@@ -1,7 +1,10 @@
 import { MetadataRoute } from "next";
 
+// Required for static export
+export const dynamic = "force-static";
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://store.varity.so";
+  const baseUrl = "https://developer.store.varity.so";
   const currentDate = new Date().toISOString();
 
   return [
@@ -15,15 +18,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/submit`,
       lastModified: currentDate,
       changeFrequency: "monthly",
-      priority: 0.8,
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/dashboard`,
       lastModified: currentDate,
       changeFrequency: "weekly",
-      priority: 0.5,
+      priority: 0.7,
     },
-    // Note: App detail pages would be added dynamically here when enabled
-    // Dynamic app pages could be added via getAllApps() if needed
+    // Note: Admin pages are intentionally excluded from sitemap
+    // Dynamic app pages could be added via getAllApps() if needed in the future
   ];
 }

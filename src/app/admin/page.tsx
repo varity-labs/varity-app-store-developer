@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
   const [isLoadingApps, setIsLoadingApps] = useState(false);
+  const [contractInitialized, setContractInitialized] = useState<boolean | null>(null);
   const [totalApps, setTotalApps] = useState(0);
   const [approvedToday, setApprovedToday] = useState(0);
   const [rejectedToday, setRejectedToday] = useState(0);
@@ -179,7 +180,7 @@ export default function AdminPage() {
     setSelectedApps(new Set());
   };
 
-  // Check if user is admin
+  // Check if user is admin and if contract is initialized
   useEffect(() => {
     async function checkAdminStatus() {
       if (!authenticated || !user?.wallet?.address) {
@@ -190,10 +191,18 @@ export default function AdminPage() {
 
       setIsCheckingAdmin(true);
       try {
+        // First, check if contract is functioning by calling getTotalApps
+        // If this works without error, the contract is initialized
+        const total = await getTotalApps();
+        setContractInitialized(true);
+
+        // Now check if user is admin
         const adminStatus = await checkIsAdmin(user.wallet.address);
         setIsAdmin(adminStatus);
       } catch (error) {
         console.error("Error checking admin status:", error);
+        // If getTotalApps fails, contract might not be initialized
+        setContractInitialized(false);
         setIsAdmin(false);
       } finally {
         setIsCheckingAdmin(false);
@@ -306,7 +315,38 @@ export default function AdminPage() {
     );
   }
 
-  if (!isAdmin) {
+  // Contract is initialized but user is not an admin - show Access Denied
+  if (!isAdmin && contractInitialized) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+        <div className="mx-auto max-w-lg text-center">
+          <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
+          <h1 className="mt-4 text-xl font-semibold text-slate-100">Access Denied</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Your wallet ({account?.address?.slice(0, 10)}...) is not authorized to access the admin panel.
+            Only approved administrators can review and manage application submissions.
+          </p>
+
+          <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900/50 p-4 text-left">
+            <h3 className="text-sm font-medium text-slate-200">Need admin access?</h3>
+            <p className="mt-2 text-xs text-slate-400">
+              Contact the contract owner or an existing admin to grant you admin privileges.
+            </p>
+          </div>
+
+          <Link
+            href="/"
+            className="mt-6 inline-block rounded-md border border-slate-800 px-4 py-2 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
+          >
+            Return to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Contract not initialized - show Initialize option
+  if (!isAdmin && !contractInitialized) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
         <div className="mx-auto max-w-lg text-center">

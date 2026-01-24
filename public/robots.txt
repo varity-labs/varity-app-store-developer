@@ -1,13 +1,28 @@
-# Varity App Store - Robots.txt
-# https://store.varity.so
+# Varity Developer Portal - Robots.txt
+# https://developer.store.varity.so
 
 User-agent: *
 Allow: /
-Disallow: /dashboard/
 Disallow: /admin/
 
 # Sitemap
-Sitemap: https://store.varity.so/sitemap.xml
+Sitemap: https://developer.store.varity.so/sitemap.xml
+
+# AI Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
 
 # Crawl delay (be nice to the server)
 Crawl-delay: 1
