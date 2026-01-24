@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2, Github, Star, GitFork, ChevronDown, Search, ExternalLink } from "lucide-react";
-import { usePrivy, useLinkAccount } from "@privy-io/react-auth";
+import { usePrivy, useLinkAccount, useOAuthTokens } from "@privy-io/react-auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useContract } from "@/hooks/useContract";
-import { useGithub, GitHubRepo, formatRelativeTime, getLanguageColor } from "@/hooks/useGithub";
+import { GitHubRepo, formatRelativeTime, getLanguageColor } from "@/hooks/useGithub";
 import { APP_CATEGORIES, VALIDATION } from "@/lib/constants";
 import { varityL3 } from "@/lib/thirdweb";
 
@@ -47,17 +47,32 @@ export default function SubmitPage() {
   const [repoSearchQuery, setRepoSearchQuery] = useState("");
   const [showRepoDropdown, setShowRepoDropdown] = useState(false);
   const [isLinkingGithub, setIsLinkingGithub] = useState(false);
-  const { repositories, isLoadingRepos, searchRepos, selectedRepo, selectRepo, hasAccessToken } = useGithub();
+
+  // GitHub state
+  const [githubToken, setGithubToken] = useState<string | null>(null);
+  const [repositories, setRepositories] = useState<GitHubRepo[]>([]);
+  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
+  const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
 
   // Check if GitHub is linked via Privy
-  const githubAccount = user?.linkedAccounts?.find((account) => account.type === "github_oauth");
+  const githubAccount = user?.linkedAccounts?.find((account: any) => account.type === "github_oauth");
   const isGithubLinked = !!githubAccount;
-  const githubUsername = githubAccount?.username || null;
+  const githubUsername = (githubAccount as any)?.username || null;
+
+  // Use Privy's useOAuthTokens to get GitHub access token
+  const { reauthorize } = useOAuthTokens({
+    onOAuthTokenGrant: ({ oAuthTokens }) => {
+      if (oAuthTokens.provider === "github") {
+        setGithubToken(oAuthTokens.accessToken);
+        setIsLinkingGithub(false);
+      }
+    },
+  });
 
   // Use Privy's useLinkAccount for GitHub OAuth
   const { linkGithub } = useLinkAccount({
     onSuccess: () => {
-      setIsLinkingGithub(false);
+      // Token will be received via useOAuthTokens callback
     },
     onError: (error) => {
       console.error("GitHub linking error:", error);
@@ -65,10 +80,49 @@ export default function SubmitPage() {
     },
   });
 
+  // Fetch repositories when we have a token
+  const fetchRepositories = useCallback(async () => {
+    if (!githubToken) return;
+    setIsLoadingRepos(true);
+    try {
+      const response = await fetch("https://api.github.com/user/repos?sort=updated&per_page=100", {
+        headers: { Authorization: `Bearer ${githubToken}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch repositories");
+      const data = await response.json();
+      setRepositories(data);
+    } catch (error) {
+      console.error("Error fetching repos:", error);
+    } finally {
+      setIsLoadingRepos(false);
+    }
+  }, [githubToken]);
+
+  // Auto-fetch repos when token is available
+  useEffect(() => {
+    if (githubToken && repositories.length === 0) {
+      fetchRepositories();
+    }
+  }, [githubToken, repositories.length, fetchRepositories]);
+
+  // Search repos locally
+  const searchRepos = useCallback((query: string): GitHubRepo[] => {
+    if (!query.trim()) return repositories;
+    const q = query.toLowerCase();
+    return repositories.filter(
+      (r) =>
+        r.name.toLowerCase().includes(q) ||
+        r.full_name.toLowerCase().includes(q) ||
+        r.description?.toLowerCase().includes(q)
+    );
+  }, [repositories]);
+
   const handleLinkGithub = () => {
     setIsLinkingGithub(true);
     linkGithub();
   };
+
+  const selectRepo = (repo: GitHubRepo | null) => setSelectedRepo(repo);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -314,7 +368,7 @@ export default function SubmitPage() {
                 )}
               </div>
               
-              {isGithubLinked && hasAccessToken && (
+              {isGithubLinked && githubToken && (
                 <div className="relative">
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
@@ -356,10 +410,16 @@ export default function SubmitPage() {
                 </div>
               )}
               
-              {isGithubLinked && !hasAccessToken && (
+              {isGithubLinked && !githubToken && (
                 <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-950/20 p-4">
-                  <p className="text-sm text-amber-400">GitHub is connected, but we need additional permissions to access your repositories.</p>
-                  <p className="text-xs text-amber-400/70 mt-1">Please enable "Return OAuth tokens" in your Privy Dashboard settings.</p>
+                  <p className="text-sm text-amber-400">GitHub is connected, but we need the access token to fetch your repositories.</p>
+                  <button
+                    type="button"
+                    onClick={() => reauthorize({ provider: "github" })}
+                    className="mt-2 text-xs text-amber-400 hover:text-amber-300 underline"
+                  >
+                    Click here to grant repository access
+                  </button>
                 </div>
               )}
               
