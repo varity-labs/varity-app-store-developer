@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2, Github, Star, GitFork, ChevronDown, Search, ExternalLink } from "lucide-react";
+import { usePrivy, useLinkAccount } from "@privy-io/react-auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useContract } from "@/hooks/useContract";
 import { useGithub, GitHubRepo, formatRelativeTime, getLanguageColor } from "@/hooks/useGithub";
-import { APP_CATEGORIES, SUPPORTED_CHAINS, VALIDATION } from "@/lib/constants";
+import { APP_CATEGORIES, VALIDATION } from "@/lib/constants";
 import { varityL3 } from "@/lib/thirdweb";
 
 interface FormData {
@@ -37,6 +38,7 @@ const initialFormData: FormData = {
 export default function SubmitPage() {
   const router = useRouter();
   const { authenticated, login } = useAuth();
+  const { user } = usePrivy();
   const { registerApp, isLoading, error: contractError, txHash, resetState, account } = useContract();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [screenshotInput, setScreenshotInput] = useState("");
@@ -44,7 +46,29 @@ export default function SubmitPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [repoSearchQuery, setRepoSearchQuery] = useState("");
   const [showRepoDropdown, setShowRepoDropdown] = useState(false);
-  const { isGithubLinked, githubUsername, githubAvatarUrl, linkGithub, isLinking, repositories, isLoadingRepos, searchRepos, selectedRepo, selectRepo, hasAccessToken } = useGithub();
+  const [isLinkingGithub, setIsLinkingGithub] = useState(false);
+  const { repositories, isLoadingRepos, searchRepos, selectedRepo, selectRepo, hasAccessToken } = useGithub();
+
+  // Check if GitHub is linked via Privy
+  const githubAccount = user?.linkedAccounts?.find((account) => account.type === "github_oauth");
+  const isGithubLinked = !!githubAccount;
+  const githubUsername = githubAccount?.username || null;
+
+  // Use Privy's useLinkAccount for GitHub OAuth
+  const { linkGithub } = useLinkAccount({
+    onSuccess: () => {
+      setIsLinkingGithub(false);
+    },
+    onError: (error) => {
+      console.error("GitHub linking error:", error);
+      setIsLinkingGithub(false);
+    },
+  });
+
+  const handleLinkGithub = () => {
+    setIsLinkingGithub(true);
+    linkGithub();
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -279,14 +303,13 @@ export default function SubmitPage() {
                 </div>
                 {isGithubLinked ? (
                   <div className="flex items-center gap-2">
-                    {githubAvatarUrl && <img src={githubAvatarUrl} alt={githubUsername || ""} className="h-6 w-6 rounded-full" />}
-                    <span className="text-sm text-slate-300">{githubUsername}</span>
+                    <span className="text-sm text-slate-300">@{githubUsername}</span>
                     <span className="flex items-center gap-1 text-xs text-emerald-400"><CheckCircle className="h-3 w-3" /> Connected</span>
                   </div>
                 ) : (
-                  <button type="button" onClick={linkGithub} disabled={isLinking} className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-700 disabled:opacity-50">
-                    {isLinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Github className="h-4 w-4" />}
-                    {isLinking ? "Connecting..." : "Connect GitHub"}
+                  <button type="button" onClick={handleLinkGithub} disabled={isLinkingGithub} className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-700 disabled:opacity-50">
+                    {isLinkingGithub ? <Loader2 className="h-4 w-4 animate-spin" /> : <Github className="h-4 w-4" />}
+                    {isLinkingGithub ? "Connecting..." : "Connect GitHub"}
                   </button>
                 )}
               </div>
@@ -479,41 +502,14 @@ export default function SubmitPage() {
                   Hosted Network
                 </label>
                 <p className="mt-1 text-xs text-slate-500">
-                  The blockchain network where your app is deployed
+                  Your app will be hosted on the Varity Network
                 </p>
-                <select
-                  id="chainId"
-                  name="chainId"
-                  value={formData.chainId}
-                  onChange={handleChange}
-                  className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
-                >
-                  {SUPPORTED_CHAINS.map((chain) => (
-                    <option key={chain.id} value={chain.id}>
-                      {chain.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                  Varity Network
+                </div>
+                <input type="hidden" name="chainId" value={33529} />
               </div>
-            </div>
-
-            {/* GitHub URL */}
-            <div>
-              <label htmlFor="githubUrl" className="block text-sm font-medium text-slate-200">
-                GitHub Repository <span className="text-slate-500">(Optional)</span>
-              </label>
-              <p className="mt-1 text-xs text-slate-500">
-                Open source? Share your repo to build trust with users
-              </p>
-              <input
-                type="url"
-                id="githubUrl"
-                name="githubUrl"
-                value={formData.githubUrl}
-                onChange={handleChange}
-                placeholder="https://github.com/username/repo"
-                className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
-              />
             </div>
 
             {/* Screenshots */}
