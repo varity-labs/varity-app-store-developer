@@ -1,20 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2, Save, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useContract } from "@/hooks/useContract";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { VALIDATION } from "@/lib/constants";
 import type { AppData } from "@/lib/constants";
 import { varityL3 } from "@/lib/thirdweb";
+import { validateAppUpdate, type AppUpdateFormData, type ValidationResult } from "@/lib/validation";
+import {
+  sanitizeInput,
+  sanitizeUrl,
+  sanitizeFormData,
+  checkRateLimit,
+  incrementRateLimit,
+  RATE_LIMITS,
+  isValidUrl,
+  isContentSafe,
+} from "@/lib/security";
 
-interface FormData {
-  description: string;
-  appUrl: string;
-  screenshots: string[];
-}
+interface FormData extends AppUpdateFormData {}
+
+const initialFormData: FormData = {
+  description: "",
+  appUrl: "",
+  screenshots: [],
+};
 
 export default function EditAppPage() {
   const params = useParams();
@@ -26,14 +41,58 @@ export default function EditAppPage() {
 
   const [app, setApp] = useState<AppData | null>(null);
   const [isLoadingApp, setIsLoadingApp] = useState(true);
-  const [formData, setFormData] = useState<FormData>({
-    description: "",
-    appUrl: "",
-    screenshots: [],
+
+  // Form persistence hook - saves draft to localStorage (unique per app)
+  const storageKey = `varity-app-edit-draft-${appId}`;
+  const {
+    data: formData,
+    setData: setFormData,
+    isDirty,
+    hasDraft,
+    lastSaved,
+    clearDraft,
+    setOriginal,
+  } = useFormPersistence<FormData>(storageKey, initialFormData, {
+    restoreOnMount: false, // Don't restore until we have app data
   });
+
+  // Unsaved changes warning
+  const { safeNavigate, confirmLeave } = useUnsavedChangesWarning(
+    isDirty,
+    "You have unsaved changes to your application. Are you sure you want to leave?"
+  );
+
   const [screenshotInput, setScreenshotInput] = useState("");
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Field-level validation errors and touched state
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+
+  // Real-time validation using the validation module
+  const validationResult = useMemo((): ValidationResult => {
+    return validateAppUpdate(formData);
+  }, [formData]);
+
+  // Get error for a specific field (only if touched)
+  const getFieldError = useCallback((fieldName: string): string | undefined => {
+    if (!touchedFields.has(fieldName)) return undefined;
+    return validationResult.errors[fieldName];
+  }, [touchedFields, validationResult.errors]);
+
+  // Mark field as touched on blur
+  const handleBlur = useCallback((fieldName: string) => {
+    setTouchedFields(prev => new Set(prev).add(fieldName));
+  }, []);
+
+  // Input class helper for validation styling
+  const getInputClassName = useCallback((fieldName: string, baseClass: string) => {
+    const error = getFieldError(fieldName);
+    if (error) {
+      return baseClass.replace("border-slate-800", "border-red-500/50").replace("focus:border-slate-600", "focus:border-red-500");
+    }
+    return baseClass;
+  }, [getFieldError]);
 
   // Fetch app data on mount
   useEffect(() => {
@@ -45,11 +104,13 @@ export default function EditAppPage() {
         const appData = await getApp(BigInt(appId));
         if (appData) {
           setApp(appData);
-          setFormData({
+          const appFormData = {
             description: appData.description,
             appUrl: appData.appUrl,
             screenshots: appData.screenshots || [],
-          });
+          };
+          // Set original data - this will be used for dirty state comparison
+          setOriginal(appFormData);
         }
       } catch (error) {
         console.error("Failed to fetch app:", error);
@@ -61,7 +122,7 @@ export default function EditAppPage() {
     }
 
     fetchApp();
-  }, [appId, getApp]);
+  }, [appId, getApp, setOriginal]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -75,9 +136,16 @@ export default function EditAppPage() {
 
   const addScreenshot = () => {
     if (screenshotInput && formData.screenshots.length < VALIDATION.MAX_SCREENSHOTS) {
+      // Security: Validate URL before adding
+      const sanitizedUrl = sanitizeUrl(screenshotInput);
+      if (!sanitizedUrl) {
+        setErrorMessage("Please enter a valid screenshot URL.");
+        setSubmitStatus("error");
+        return;
+      }
       setFormData((prev) => ({
         ...prev,
-        screenshots: [...prev.screenshots, screenshotInput],
+        screenshots: [...prev.screenshots, sanitizedUrl],
       }));
       setScreenshotInput("");
     }
@@ -117,9 +185,30 @@ export default function EditAppPage() {
       return;
     }
 
-    // Validate form
-    if (!formData.description || !formData.appUrl) {
-      setErrorMessage("Please fill in all required fields.");
+    // Mark all fields as touched to show errors
+    setTouchedFields(new Set(["description", "appUrl"]));
+
+    // Use the validation module for comprehensive validation
+    const validation = validateAppUpdate(formData);
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      setErrorMessage(firstError || "Please fix the errors in the form.");
+      setSubmitStatus("error");
+      return;
+    }
+
+    // Security: Check rate limiting
+    const rateLimitCheck = checkRateLimit("update", RATE_LIMITS.update);
+    if (rateLimitCheck.isLimited) {
+      const waitSeconds = Math.ceil(rateLimitCheck.remainingMs / 1000);
+      setErrorMessage(`Too many updates. Please wait ${waitSeconds} seconds before trying again.`);
+      setSubmitStatus("error");
+      return;
+    }
+
+    // Security: Check for potentially dangerous content
+    if (!isContentSafe(formData.description)) {
+      setErrorMessage("Invalid characters detected in your description. Please remove any scripts or special formatting.");
       setSubmitStatus("error");
       return;
     }
@@ -129,13 +218,25 @@ export default function EditAppPage() {
     setErrorMessage("");
 
     try {
+      // Security: Increment rate limit counter
+      incrementRateLimit("update", RATE_LIMITS.update);
+
+      // Security: Sanitize all form data before contract call
+      const sanitizedData = sanitizeFormData({
+        description: formData.description,
+        appUrl: formData.appUrl,
+        screenshots: formData.screenshots,
+      });
+
       await updateApp(
         BigInt(appId),
-        formData.description,
-        formData.appUrl,
-        formData.screenshots
+        sanitizedData.description,
+        sanitizedData.appUrl,
+        (sanitizedData.screenshots as string[]).filter(Boolean)
       );
 
+      // Success! Clear the draft
+      clearDraft();
       setSubmitStatus("success");
 
       // Redirect to dashboard after 3 seconds
@@ -203,6 +304,11 @@ export default function EditAppPage() {
         <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 lg:px-8">
           <Link
             href="/dashboard"
+            onClick={(e) => {
+              if (isDirty && !confirmLeave()) {
+                e.preventDefault();
+              }
+            }}
             className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-slate-200"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -334,15 +440,20 @@ export default function EditAppPage() {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
+                onBlur={() => handleBlur("description")}
                 maxLength={VALIDATION.DESCRIPTION_MAX_LENGTH}
                 rows={5}
-                className="mt-2 w-full resize-none rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                className={getInputClassName("description", "mt-2 w-full resize-none rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600")}
                 required
               />
               <div className="mt-1 flex items-center justify-between">
-                <p className="text-xs text-slate-500">
-                  Tip: Focus on benefits, not just features
-                </p>
+                {getFieldError("description") ? (
+                  <p className="text-xs text-red-400">{getFieldError("description")}</p>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Tip: Focus on benefits, not just features
+                  </p>
+                )}
                 <p className="text-xs text-slate-500">
                   {formData.description.length}/{VALIDATION.DESCRIPTION_MAX_LENGTH}
                 </p>
@@ -363,10 +474,14 @@ export default function EditAppPage() {
                 name="appUrl"
                 value={formData.appUrl}
                 onChange={handleChange}
+                onBlur={() => handleBlur("appUrl")}
                 placeholder="https://myapp.varity.so"
-                className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                className={getInputClassName("appUrl", "mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600")}
                 required
               />
+              {getFieldError("appUrl") && (
+                <p className="mt-1 text-xs text-red-400">{getFieldError("appUrl")}</p>
+              )}
             </div>
 
             {/* Screenshots */}
@@ -417,26 +532,49 @@ export default function EditAppPage() {
             </div>
 
             {/* Submit */}
-            <div className="flex justify-end gap-3 border-t border-slate-800/50 pt-6">
-              <Link
-                href="/dashboard"
-                className="rounded-md border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={isLoading || submitStatus === "success"}
-                className="inline-flex items-center gap-2 rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isLoading ? "Saving..." : submitStatus === "success" ? "Saved" : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Save Changes
-                  </>
+            <div className="flex items-center justify-between border-t border-slate-800/50 pt-6">
+              {/* Dirty state indicator */}
+              <div className="flex items-center gap-2">
+                {isDirty && (
+                  <span className="text-xs text-slate-500 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    Unsaved changes
+                  </span>
                 )}
-              </button>
+                {hasDraft && lastSaved && !isDirty && (
+                  <span className="text-xs text-slate-500 flex items-center gap-1.5">
+                    <Clock className="h-3 w-3" />
+                    Saved at {lastSaved.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirmLeave()) {
+                      clearDraft();
+                      router.push("/dashboard");
+                    }
+                  }}
+                  className="rounded-md border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || submitStatus === "success"}
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isLoading ? "Saving..." : submitStatus === "success" ? "Saved" : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         )}

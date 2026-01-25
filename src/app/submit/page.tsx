@@ -1,37 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2, Github, Star, GitFork, ChevronDown, Search, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2, Github, Star, GitFork, ChevronDown, Search, ExternalLink, Save, Clock } from "lucide-react";
 import { usePrivy, useLinkAccount, useOAuthTokens } from "@privy-io/react-auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useContract } from "@/hooks/useContract";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { GitHubRepo, formatRelativeTime, getLanguageColor } from "@/lib/github";
 import { APP_CATEGORIES, VALIDATION } from "@/lib/constants";
 import { varityL3 } from "@/lib/thirdweb";
+import { sendAppSubmissionEmail } from "@/lib/web3forms";
+import { validateAppSubmission, type AppFormData, type ValidationResult } from "@/lib/validation";
+import {
+  sanitizeInput,
+  sanitizeUrl,
+  sanitizeFormData,
+  checkRateLimit,
+  incrementRateLimit,
+  RATE_LIMITS,
+  isValidUrl as isSecureUrl,
+  isContentSafe,
+} from "@/lib/security";
 
-interface FormData {
-  name: string;
-  description: string;
-  appUrl: string;
-  logoUrl: string;
-  category: string;
-  chainId: number;
-  builtWithVarity: boolean;
-  githubUrl: string;
-  screenshots: string[];
-  // Company Information
-  companyName: string;
-  websiteUrl: string;
-  // Social Links
-  twitterHandle: string;
-  linkedinUrl: string;
-  // Legal Documents
-  privacyPolicyUrl: string;
-  supportEmail: string;
-  termsOfServiceUrl: string;
-}
+interface FormData extends AppFormData {}
 
 const initialFormData: FormData = {
   name: "",
@@ -55,15 +49,10 @@ const initialFormData: FormData = {
   termsOfServiceUrl: "",
 };
 
-// Validation helpers
+// Validation helpers - uses secure URL validation from security module
 const isValidUrl = (url: string): boolean => {
   if (!url) return true; // Empty is valid (fields are optional)
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
+  return isSecureUrl(url);
 };
 
 const isValidEmail = (email: string): boolean => {
@@ -77,18 +66,40 @@ const formatTwitterHandle = (handle: string): string => {
   return handle.startsWith("@") ? handle.slice(1) : handle;
 };
 
+const FORM_STORAGE_KEY = "varity-app-submit-draft";
+
 export default function SubmitPage() {
   const router = useRouter();
   const { authenticated, login } = useAuth();
   const { user } = usePrivy();
   const { registerApp, isLoading, error: contractError, txHash, resetState, account } = useContract();
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+
+  // Form persistence hook - saves draft to localStorage
+  const {
+    data: formData,
+    setData: setFormData,
+    isDirty,
+    hasDraft,
+    lastSaved,
+    clearDraft,
+    resetForm,
+  } = useFormPersistence<FormData>(FORM_STORAGE_KEY, initialFormData);
+
+  // Unsaved changes warning
+  const { safeNavigate, confirmLeave } = useUnsavedChangesWarning(
+    isDirty,
+    "You have unsaved changes to your application. Are you sure you want to leave?"
+  );
+
   const [screenshotInput, setScreenshotInput] = useState("");
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [repoSearchQuery, setRepoSearchQuery] = useState("");
   const [showRepoDropdown, setShowRepoDropdown] = useState(false);
   const [isLinkingGithub, setIsLinkingGithub] = useState(false);
+
+  // Field-level validation errors and touched state
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
   // GitHub state
   const [githubToken, setGithubToken] = useState<string | null>(null);
@@ -100,6 +111,31 @@ export default function SubmitPage() {
   const githubAccount = user?.linkedAccounts?.find((account: any) => account.type === "github_oauth");
   const isGithubLinked = !!githubAccount;
   const githubUsername = (githubAccount as any)?.username || null;
+
+  // Real-time validation using the validation module
+  const validationResult = useMemo((): ValidationResult => {
+    return validateAppSubmission(formData);
+  }, [formData]);
+
+  // Get error for a specific field (only if touched)
+  const getFieldError = useCallback((fieldName: string): string | undefined => {
+    if (!touchedFields.has(fieldName)) return undefined;
+    return validationResult.errors[fieldName];
+  }, [touchedFields, validationResult.errors]);
+
+  // Mark field as touched on blur
+  const handleBlur = useCallback((fieldName: string) => {
+    setTouchedFields(prev => new Set(prev).add(fieldName));
+  }, []);
+
+  // Input class helper for validation styling
+  const getInputClassName = useCallback((fieldName: string, baseClass: string) => {
+    const error = getFieldError(fieldName);
+    if (error) {
+      return baseClass.replace("border-slate-800", "border-red-500/50").replace("focus:border-slate-600", "focus:border-red-500");
+    }
+    return baseClass;
+  }, [getFieldError]);
 
   // Use Privy's useOAuthTokens to get GitHub access token
   const { reauthorize } = useOAuthTokens({
@@ -178,9 +214,16 @@ export default function SubmitPage() {
 
   const addScreenshot = () => {
     if (screenshotInput && formData.screenshots.length < VALIDATION.MAX_SCREENSHOTS) {
+      // Security: Validate URL before adding
+      const sanitizedUrl = sanitizeUrl(screenshotInput);
+      if (!sanitizedUrl) {
+        setErrorMessage("Please enter a valid screenshot URL (must be http or https).");
+        setSubmitStatus("error");
+        return;
+      }
       setFormData((prev) => ({
         ...prev,
-        screenshots: [...prev.screenshots, screenshotInput],
+        screenshots: [...prev.screenshots, sanitizedUrl],
       }));
       setScreenshotInput("");
     }
@@ -193,6 +236,15 @@ export default function SubmitPage() {
       ...prev,
       screenshots: prev.screenshots.filter((_, i) => i !== index),
     }));
+  };
+
+  // Handle cancel with confirmation
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (confirmLeave()) {
+      clearDraft();
+      router.push("/");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -210,32 +262,30 @@ export default function SubmitPage() {
       return;
     }
 
-    // Validate form
-    if (!formData.name || !formData.description || !formData.appUrl || !formData.category) {
-      setErrorMessage("Please fill in all required fields.");
+    // Mark all required fields as touched to show errors
+    setTouchedFields(new Set(["name", "description", "appUrl", "category"]));
+
+    // Use the validation module for comprehensive validation
+    const validation = validateAppSubmission(formData);
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      setErrorMessage(firstError || "Please fix the errors in the form.");
       setSubmitStatus("error");
       return;
     }
 
-    // Validate optional URL fields
-    const urlFields = [
-      { name: "Website URL", value: formData.websiteUrl },
-      { name: "LinkedIn URL", value: formData.linkedinUrl },
-      { name: "Privacy Policy URL", value: formData.privacyPolicyUrl },
-      { name: "Terms of Service URL", value: formData.termsOfServiceUrl },
-    ];
-
-    for (const field of urlFields) {
-      if (field.value && !isValidUrl(field.value)) {
-        setErrorMessage(`Please enter a valid URL for ${field.name}.`);
-        setSubmitStatus("error");
-        return;
-      }
+    // Security: Check rate limiting
+    const rateLimitCheck = checkRateLimit("submit", RATE_LIMITS.submit);
+    if (rateLimitCheck.isLimited) {
+      const waitSeconds = Math.ceil(rateLimitCheck.remainingMs / 1000);
+      setErrorMessage(`Too many submissions. Please wait ${waitSeconds} seconds before trying again.`);
+      setSubmitStatus("error");
+      return;
     }
 
-    // Validate email
-    if (formData.supportEmail && !isValidEmail(formData.supportEmail)) {
-      setErrorMessage("Please enter a valid email address for Support Email.");
+    // Security: Check for potentially dangerous content
+    if (!isContentSafe(formData.name) || !isContentSafe(formData.description)) {
+      setErrorMessage("Invalid characters detected in your submission. Please remove any scripts or special formatting.");
       setSubmitStatus("error");
       return;
     }
@@ -246,62 +296,63 @@ export default function SubmitPage() {
     setErrorMessage("");
 
     try {
-      // STEP 1: Send email notification via Web3Forms BEFORE blockchain call
-      try {
-        const web3formsResponse = await fetch("https://api.web3forms.com/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            access_key: "322fcdfe-779a-4cab-a76a-11285466709c",
-            subject: `New App Submission: ${formData.name}`,
-            from_name: "Varity App Store",
-            to: "team@varity.so",
-            // Form data
-            app_name: formData.name,
-            description: formData.description,
-            app_url: formData.appUrl,
-            logo_url: formData.logoUrl || "Not provided",
-            category: formData.category,
-            chain_id: formData.chainId,
-            github_url: formData.githubUrl || "Not provided",
-            built_with_varity: formData.builtWithVarity ? "Yes" : "No",
-            screenshots: formData.screenshots.length > 0 ? formData.screenshots.join(", ") : "None",
-            developer_address: account,
-            // Company Information
-            company_name: formData.companyName || "Not provided",
-            website_url: formData.websiteUrl || "Not provided",
-            // Social Links
-            twitter_handle: formData.twitterHandle ? `@${formatTwitterHandle(formData.twitterHandle)}` : "Not provided",
-            linkedin_url: formData.linkedinUrl || "Not provided",
-            // Legal Documents
-            privacy_policy_url: formData.privacyPolicyUrl || "Not provided",
-            support_email: formData.supportEmail || "Not provided",
-            terms_of_service_url: formData.termsOfServiceUrl || "Not provided",
-          }),
-        });
+      // Security: Increment rate limit counter
+      incrementRateLimit("submit", RATE_LIMITS.submit);
 
-        const web3formsData = await web3formsResponse.json();
-        if (!web3formsData.success) {
-          console.warn("Web3Forms notification failed:", web3formsData.message);
-          // Continue anyway - email failure shouldn't block submission
-        }
-      } catch (emailError) {
-        console.warn("Email notification failed:", emailError);
+      // Security: Sanitize all form data before any external calls
+      const sanitizedData = sanitizeFormData({
+        name: formData.name,
+        description: formData.description,
+        appUrl: formData.appUrl,
+        logoUrl: formData.logoUrl,
+        category: formData.category,
+        githubUrl: formData.githubUrl,
+        companyName: formData.companyName,
+        websiteUrl: formData.websiteUrl,
+        twitterHandle: formData.twitterHandle,
+        linkedinUrl: formData.linkedinUrl,
+        privacyPolicyUrl: formData.privacyPolicyUrl,
+        supportEmail: formData.supportEmail,
+        termsOfServiceUrl: formData.termsOfServiceUrl,
+        screenshots: formData.screenshots,
+      });
+
+      // STEP 1: Send email notification via Web3Forms BEFORE blockchain call
+      // Uses the dedicated web3forms module with retry logic and proper error handling
+      const emailResult = await sendAppSubmissionEmail({
+        appName: sanitizedData.name,
+        description: sanitizedData.description,
+        appUrl: sanitizedData.appUrl,
+        category: sanitizedData.category,
+        developerAddress: account.address,
+        logoUrl: sanitizedData.logoUrl || undefined,
+        chainId: formData.chainId,
+        githubUrl: sanitizedData.githubUrl || undefined,
+        builtWithVarity: formData.builtWithVarity,
+        screenshots: (sanitizedData.screenshots as string[]).length > 0 ? (sanitizedData.screenshots as string[]).filter(Boolean) : undefined,
+        companyName: sanitizedData.companyName || undefined,
+        websiteUrl: sanitizedData.websiteUrl || undefined,
+        twitterHandle: sanitizedData.twitterHandle ? formatTwitterHandle(sanitizedData.twitterHandle) : undefined,
+        linkedinUrl: sanitizedData.linkedinUrl || undefined,
+        privacyPolicyUrl: sanitizedData.privacyPolicyUrl || undefined,
+        supportEmail: sanitizedData.supportEmail || undefined,
+        termsOfServiceUrl: sanitizedData.termsOfServiceUrl || undefined,
+      });
+
+      if (!emailResult.success) {
+        console.warn("Web3Forms notification failed:", emailResult.message);
         // Continue anyway - email failure shouldn't block submission
       }
 
-      // STEP 2: Prepare metadata JSON for additional fields
+      // STEP 2: Prepare metadata JSON for additional fields (using sanitized data)
       const metadata = {
-        companyName: formData.companyName || undefined,
-        websiteUrl: formData.websiteUrl || undefined,
-        twitterHandle: formData.twitterHandle ? formatTwitterHandle(formData.twitterHandle) : undefined,
-        linkedinUrl: formData.linkedinUrl || undefined,
-        privacyPolicyUrl: formData.privacyPolicyUrl || undefined,
-        supportEmail: formData.supportEmail || undefined,
-        termsOfServiceUrl: formData.termsOfServiceUrl || undefined,
+        companyName: sanitizedData.companyName || undefined,
+        websiteUrl: sanitizedData.websiteUrl || undefined,
+        twitterHandle: sanitizedData.twitterHandle ? formatTwitterHandle(sanitizedData.twitterHandle) : undefined,
+        linkedinUrl: sanitizedData.linkedinUrl || undefined,
+        privacyPolicyUrl: sanitizedData.privacyPolicyUrl || undefined,
+        supportEmail: sanitizedData.supportEmail || undefined,
+        termsOfServiceUrl: sanitizedData.termsOfServiceUrl || undefined,
       };
 
       // Filter out undefined values
@@ -309,25 +360,26 @@ export default function SubmitPage() {
         Object.entries(metadata).filter(([, v]) => v !== undefined)
       );
 
-      // Append metadata to description if there are any extra fields
+      // Append metadata to description if there are any extra fields (using sanitized description)
       const descriptionWithMetadata = Object.keys(cleanMetadata).length > 0
-        ? `${formData.description}\n\n<!-- VARITY_METADATA:${JSON.stringify(cleanMetadata)} -->`
-        : formData.description;
+        ? `${sanitizedData.description}\n\n<!-- VARITY_METADATA:${JSON.stringify(cleanMetadata)} -->`
+        : sanitizedData.description;
 
-      // STEP 3: Call smart contract to register app
+      // STEP 3: Call smart contract to register app (using sanitized data)
       const result = await registerApp({
-        name: formData.name,
+        name: sanitizedData.name,
         description: descriptionWithMetadata,
-        appUrl: formData.appUrl,
-        logoUrl: formData.logoUrl,
-        category: formData.category,
+        appUrl: sanitizedData.appUrl,
+        logoUrl: sanitizedData.logoUrl,
+        category: sanitizedData.category,
         chainId: formData.chainId,
         builtWithVarity: formData.builtWithVarity,
-        githubUrl: formData.githubUrl,
-        screenshots: formData.screenshots,
+        githubUrl: sanitizedData.githubUrl,
+        screenshots: (sanitizedData.screenshots as string[]).filter(Boolean),
       });
 
-      // Success!
+      // Success! Clear the draft
+      clearDraft();
       setSubmitStatus("success");
 
       // Redirect to dashboard after 3 seconds
@@ -349,6 +401,11 @@ export default function SubmitPage() {
         <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 lg:px-8">
           <Link
             href="/"
+            onClick={(e) => {
+              if (isDirty && !confirmLeave()) {
+                e.preventDefault();
+              }
+            }}
             className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-slate-200"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -363,11 +420,45 @@ export default function SubmitPage() {
           <p className="mt-3 text-body-md text-foreground-secondary max-w-2xl">
             Join the growing ecosystem of verified applications. Your app will be reviewed within 48 hours and discoverable by enterprise customers worldwide.
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/5 px-4 py-1.5 text-xs text-brand-400">
-            <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Average approval time: 24 hours</span>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/5 px-4 py-1.5 text-xs text-brand-400">
+              <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Average approval time: 24 hours</span>
+            </div>
+            {/* Draft indicator */}
+            {hasDraft && isDirty && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-4 py-1.5 text-xs text-amber-400">
+                <Save className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Draft saved{lastSaved ? ` at ${lastSaved.toLocaleTimeString()}` : ""}</span>
+              </div>
+            )}
           </div>
         </header>
+
+        {/* Draft restored notification */}
+        {hasDraft && !isDirty && authenticated && (
+          <div className="mb-8 flex items-start gap-4 rounded-xl border border-blue-500/20 bg-blue-950/30 p-6 animate-fade-in">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+              <Clock className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-heading-md text-blue-400">Draft Restored</h3>
+              <p className="mt-2 text-body-sm text-blue-400/80">
+                We found an unfinished submission. Your previous progress has been restored.
+              </p>
+              <button
+                onClick={() => {
+                  if (confirm("Are you sure you want to clear your draft? This cannot be undone.")) {
+                    resetForm();
+                  }
+                }}
+                className="mt-3 text-body-sm text-blue-400 hover:text-blue-300 transition-colors underline"
+              >
+                Start fresh instead
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Success message */}
         {submitStatus === "success" && (
@@ -547,14 +638,21 @@ export default function SubmitPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
+                onBlur={() => handleBlur("name")}
                 maxLength={VALIDATION.NAME_MAX_LENGTH}
                 placeholder="e.g., Enterprise Analytics Dashboard"
-                className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                className={getInputClassName("name", "mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600")}
                 required
               />
-              <p className="mt-1 text-xs text-slate-500">
-                {formData.name.length}/{VALIDATION.NAME_MAX_LENGTH} characters
-              </p>
+              <div className="mt-1 flex items-center justify-between">
+                {getFieldError("name") ? (
+                  <p className="text-xs text-red-400">{getFieldError("name")}</p>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    {formData.name.length}/{VALIDATION.NAME_MAX_LENGTH} characters
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Description */}
@@ -570,16 +668,21 @@ export default function SubmitPage() {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
+                onBlur={() => handleBlur("description")}
                 maxLength={VALIDATION.DESCRIPTION_MAX_LENGTH}
                 rows={5}
                 placeholder="e.g., A real-time analytics dashboard for enterprise teams to track metrics, visualize data, and make data-driven decisions. Built for high-scale operations with 70-85% lower infrastructure costs."
-                className="mt-2 w-full resize-none rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                className={getInputClassName("description", "mt-2 w-full resize-none rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600")}
                 required
               />
               <div className="mt-1 flex items-center justify-between">
-                <p className="text-xs text-slate-500">
-                  Tip: Focus on benefits, not just features
-                </p>
+                {getFieldError("description") ? (
+                  <p className="text-xs text-red-400">{getFieldError("description")}</p>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Tip: Focus on benefits, not just features
+                  </p>
+                )}
                 <p className="text-xs text-slate-500">
                   {formData.description.length}/{VALIDATION.DESCRIPTION_MAX_LENGTH}
                 </p>
@@ -600,10 +703,14 @@ export default function SubmitPage() {
                 name="appUrl"
                 value={formData.appUrl}
                 onChange={handleChange}
+                onBlur={() => handleBlur("appUrl")}
                 placeholder="https://myapp.varity.so"
-                className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                className={getInputClassName("appUrl", "mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600")}
                 required
               />
+              {getFieldError("appUrl") && (
+                <p className="mt-1 text-xs text-red-400">{getFieldError("appUrl")}</p>
+              )}
             </div>
 
             {/* Logo URL */}
@@ -620,12 +727,17 @@ export default function SubmitPage() {
                 name="logoUrl"
                 value={formData.logoUrl}
                 onChange={handleChange}
+                onBlur={() => handleBlur("logoUrl")}
                 placeholder="https://myapp.com/logo.png"
-                className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                className={getInputClassName("logoUrl", "mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600")}
               />
-              <p className="mt-1 text-xs text-slate-500">
-                Square image recommended (256×256px minimum). PNG with transparent background works best.
-              </p>
+              {getFieldError("logoUrl") ? (
+                <p className="mt-1 text-xs text-red-400">{getFieldError("logoUrl")}</p>
+              ) : (
+                <p className="mt-1 text-xs text-slate-500">
+                  Square image recommended (256x256px minimum). PNG with transparent background works best.
+                </p>
+              )}
             </div>
 
             {/* Category and Network */}
@@ -642,7 +754,8 @@ export default function SubmitPage() {
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
-                  className="mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600"
+                  onBlur={() => handleBlur("category")}
+                  className={getInputClassName("category", "mt-2 w-full rounded-md border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 focus:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-600")}
                   required
                 >
                   <option value="">Select category</option>
@@ -652,6 +765,9 @@ export default function SubmitPage() {
                     </option>
                   ))}
                 </select>
+                {getFieldError("category") && (
+                  <p className="mt-1 text-xs text-red-400">{getFieldError("category")}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="chainId" className="block text-sm font-medium text-slate-200">
@@ -884,21 +1000,33 @@ export default function SubmitPage() {
             </div>
 
             {/* Submit */}
-            <div className="flex justify-end gap-3 border-t border-slate-800/50 pt-6">
-              <Link
-                href="/"
-                className="rounded-md border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={isLoading || submitStatus === "success"}
-                className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-5 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isLoading ? "Submitting..." : submitStatus === "success" ? "Submitted" : "Submit for Review"}
-              </button>
+            <div className="flex items-center justify-between border-t border-slate-800/50 pt-6">
+              {/* Dirty state indicator */}
+              <div className="flex items-center gap-2">
+                {isDirty && (
+                  <span className="text-xs text-slate-500 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    Unsaved changes
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="rounded-md border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || submitStatus === "success"}
+                  className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-5 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isLoading ? "Submitting..." : submitStatus === "success" ? "Submitted" : "Submit for Review"}
+                </button>
+              </div>
             </div>
           </form>
         )}
