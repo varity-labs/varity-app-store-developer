@@ -198,13 +198,24 @@ export function validateAppSubmission(data: AppFormData): ValidationResult {
 
 /**
  * Form data interface for app update (edit form)
+ * Includes category, logoUrl, social links, and legal documents
  */
 export interface AppUpdateFormData {
   description: string;
   appUrl: string;
+  logoUrl: string;
+  category: string;
   screenshots: string[];
+  // Social links (optional)
+  websiteUrl?: string;
+  twitterHandle?: string;
+  linkedinUrl?: string;
+  // Legal documents (optional)
+  privacyPolicyUrl?: string;
+  termsOfServiceUrl?: string;
+  supportEmail?: string;
   // Index signature for compatibility with sanitizeFormData
-  [key: string]: string | string[];
+  [key: string]: string | string[] | undefined;
 }
 
 /**
@@ -227,6 +238,9 @@ export function validateAppUpdate(data: AppUpdateFormData): ValidationResult {
     if (appUrlError) errors.appUrl = appUrlError;
   }
 
+  const categoryError = validateRequired(data.category, "Category");
+  if (categoryError) errors.category = categoryError;
+
   // Max length validation
   const descLengthError = validateMaxLength(
     data.description,
@@ -234,6 +248,30 @@ export function validateAppUpdate(data: AppUpdateFormData): ValidationResult {
     "Description"
   );
   if (descLengthError && !errors.description) errors.description = descLengthError;
+
+  // Optional URL validations
+  const logoUrlError = validateUrl(data.logoUrl);
+  if (logoUrlError) errors.logoUrl = logoUrlError;
+
+  const websiteUrlError = validateUrl(data.websiteUrl || "");
+  if (websiteUrlError) errors.websiteUrl = websiteUrlError;
+
+  const linkedinUrlError = validateUrl(data.linkedinUrl || "");
+  if (linkedinUrlError) errors.linkedinUrl = linkedinUrlError;
+
+  const privacyPolicyUrlError = validateUrl(data.privacyPolicyUrl || "");
+  if (privacyPolicyUrlError) errors.privacyPolicyUrl = privacyPolicyUrlError;
+
+  const termsOfServiceUrlError = validateUrl(data.termsOfServiceUrl || "");
+  if (termsOfServiceUrlError) errors.termsOfServiceUrl = termsOfServiceUrlError;
+
+  // Email validation
+  const emailError = validateEmail(data.supportEmail || "");
+  if (emailError) errors.supportEmail = emailError;
+
+  // Twitter handle validation
+  const twitterError = validateTwitterHandle(data.twitterHandle || "");
+  if (twitterError) errors.twitterHandle = twitterError;
 
   // Screenshot URL validations
   data.screenshots.forEach((url, index) => {
