@@ -1,0 +1,45 @@
+{
+  "name": "Varity Developer Portal",
+  "short_name": "Varity Dev",
+  "description": "Submit and manage your applications on the Varity App Store. Get 70% revenue share and reach enterprise customers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#14B8A6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["developer tools", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/logo/varity-logo-color.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Submit App",
+      "short_name": "Submit",
+      "description": "Submit a new application to the App Store",
+      "url": "/submit",
+      "icons": [{ "src": "/logo/varity-logo-color.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your developer dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/logo/varity-logo-color.svg", "sizes": "any" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

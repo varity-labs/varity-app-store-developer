@@ -1,8 +1,33 @@
+/**
+ * Footer Component
+ *
+ * Semantic footer component with WCAG accessibility standards.
+ * Includes navigation links, social media links, and company information.
+ *
+ * Accessibility Features:
+ * - role="contentinfo" for WCAG landmark
+ * - SR-only heading for social links
+ * - ARIA labels on external links
+ * - Proper semantic HTML structure
+ * - Keyboard navigation support
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <Footer />
+ * ```
+ */
+
 import Link from "next/link";
 import Image from "next/image";
 import { Twitter, Linkedin, Github, Youtube } from "lucide-react";
 
-// Custom Discord icon (not available in lucide-react)
+/**
+ * Custom Discord icon (not available in lucide-react)
+ * @param props - Component props
+ * @param props.className - Optional CSS classes
+ * @returns Discord SVG icon
+ */
 function DiscordIcon({ className }: { className?: string }): React.JSX.Element {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -11,7 +36,12 @@ function DiscordIcon({ className }: { className?: string }): React.JSX.Element {
   );
 }
 
-// Custom Reddit icon (not available in lucide-react)
+/**
+ * Custom Reddit icon (not available in lucide-react)
+ * @param props - Component props
+ * @param props.className - Optional CSS classes
+ * @returns Reddit SVG icon
+ */
 function RedditIcon({ className }: { className?: string }): React.JSX.Element {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -20,7 +50,10 @@ function RedditIcon({ className }: { className?: string }): React.JSX.Element {
   );
 }
 
-// Social media links
+/**
+ * Social media links configuration
+ * Each link includes label, URL, and icon component
+ */
 const socialLinks = [
   { label: "Twitter", href: "https://x.com/VarityHQ", icon: Twitter },
   { label: "Discord", href: "https://discord.gg/Uhjx6yhJ", icon: DiscordIcon },
@@ -28,22 +61,29 @@ const socialLinks = [
   { label: "GitHub", href: "https://github.com/varity-labs", icon: Github },
   { label: "Reddit", href: "https://www.reddit.com/r/varityHQ", icon: RedditIcon },
   { label: "YouTube", href: "https://www.youtube.com/@VarityHQ", icon: Youtube },
-];
+] as const;
 
+/**
+ * Footer component with WCAG accessibility compliance
+ * @returns Footer component with navigation and social links
+ */
 export function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="border-t border-border bg-background">
+    <footer role="contentinfo" className="border-t border-border bg-background">
       <div className="section-container py-16">
         <div className="grid gap-12 md:grid-cols-5">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 rounded-md transition-all duration-200 hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background">
               <Image
                 src="/logo/varity-logo-color.svg"
-                alt="Varity"
+                alt=""
                 width={32}
                 height={32}
                 className="object-contain"
+                aria-hidden="true"
               />
               <span className="font-display text-xl font-bold tracking-tight text-foreground">
                 Varity
@@ -52,28 +92,32 @@ export function Footer() {
             <p className="mt-4 max-w-sm text-body-sm text-foreground-secondary">
               The curated marketplace for enterprise-grade Web3 applications. Deploy with confidence and save 70-85% compared to traditional cloud providers.
             </p>
+
             {/* Social Media Links */}
-            <div className="mt-6 flex items-center gap-4">
-              {socialLinks.map((social) => {
-                const IconComponent = social.icon;
-                return (
-                  <a
-                    key={social.label}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground-muted transition-colors hover:text-brand-400"
-                    aria-label={`Follow us on ${social.label}`}
-                  >
-                    <IconComponent className="h-5 w-5" />
-                  </a>
-                );
-              })}
-            </div>
+            <nav aria-label="Social media links">
+              <h2 className="sr-only">Follow us on social media</h2>
+              <div className="mt-6 flex items-center gap-4">
+                {socialLinks.map((social) => {
+                  const IconComponent = social.icon;
+                  return (
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-md p-1 text-foreground-muted transition-all duration-200 hover:text-brand-400 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                      aria-label={`Follow us on ${social.label} - Opens in new tab`}
+                    >
+                      <IconComponent className="h-5 w-5" />
+                    </a>
+                  );
+                })}
+              </div>
+            </nav>
           </div>
 
           {/* Developer Portal */}
-          <div>
+          <nav aria-label="Developer portal navigation">
             <h3 className="text-overline text-foreground-muted">
               Developer Portal
             </h3>
@@ -81,7 +125,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/submit"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
                 >
                   Submit Application
                 </Link>
@@ -89,7 +133,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/dashboard"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
                 >
                   Dashboard
                 </Link>
@@ -99,7 +143,8 @@ export function Footer() {
                   href="https://docs.varity.so"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="Documentation - Opens in new tab"
                 >
                   Documentation
                 </a>
@@ -109,16 +154,17 @@ export function Footer() {
                   href="https://github.com/varity-labs"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="GitHub - Opens in new tab"
                 >
                   GitHub
                 </a>
               </li>
             </ul>
-          </div>
+          </nav>
 
           {/* Company */}
-          <div>
+          <nav aria-label="Company navigation">
             <h3 className="text-overline text-foreground-muted">
               Company
             </h3>
@@ -128,7 +174,8 @@ export function Footer() {
                   href="https://www.varity.so"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="Varity.so - Opens in new tab"
                 >
                   Varity.so
                 </a>
@@ -138,7 +185,8 @@ export function Footer() {
                   href="https://store.varity.so"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="App Store - Opens in new tab"
                 >
                   App Store
                 </a>
@@ -148,7 +196,8 @@ export function Footer() {
                   href="https://www.varity.so/privacy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="Privacy Policy - Opens in new tab"
                 >
                   Privacy Policy
                 </a>
@@ -158,16 +207,17 @@ export function Footer() {
                   href="https://www.varity.so/terms"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="Terms of Service - Opens in new tab"
                 >
                   Terms of Service
                 </a>
               </li>
             </ul>
-          </div>
+          </nav>
 
           {/* Support */}
-          <div>
+          <nav aria-label="Support navigation">
             <h3 className="text-overline text-foreground-muted">
               Support
             </h3>
@@ -177,7 +227,8 @@ export function Footer() {
                   href="https://store.varity.so/help"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="Help Center - Opens in new tab"
                 >
                   Help Center
                 </a>
@@ -187,7 +238,8 @@ export function Footer() {
                   href="https://explorer-varity-testnet-rroe52pwjp.t.conduit.xyz"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="Network Status - Opens in new tab"
                 >
                   Network Status
                 </a>
@@ -197,7 +249,8 @@ export function Footer() {
                   href="https://discord.gg/Uhjx6yhJ"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="Contact Us - Opens in new tab"
                 >
                   Contact Us
                 </a>
@@ -205,24 +258,27 @@ export function Footer() {
               <li>
                 <a
                   href="mailto:hello@varity.so"
-                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400"
+                  className="text-body-sm text-foreground-secondary transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+                  aria-label="Email us at hello@varity.so"
                 >
                   hello@varity.so
                 </a>
               </li>
             </ul>
-          </div>
+          </nav>
         </div>
 
+        {/* Copyright and Attribution */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
           <p className="text-caption text-foreground-muted">
-            {new Date().getFullYear()} Varity Labs, Inc. All rights reserved.
+            &copy; {currentYear} Varity Labs, Inc. All rights reserved.
           </p>
           <a
             href="https://www.varity.so"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-caption text-foreground-muted transition-colors hover:text-brand-400"
+            className="text-caption text-foreground-muted transition-colors hover:text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 focus:ring-offset-background"
+            aria-label="Built with Varity - Opens in new tab"
           >
             Built with Varity
           </a>

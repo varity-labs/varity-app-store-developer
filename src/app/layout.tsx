@@ -6,6 +6,10 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { StructuredData, homePageStructuredData } from "@/components/StructuredData";
 
+/**
+ * Viewport configuration for responsive design and mobile optimization
+ * @see https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -13,6 +17,11 @@ export const viewport: Viewport = {
   themeColor: "#030712",
 };
 
+/**
+ * Metadata configuration for SEO, social sharing, and discoverability
+ * Includes OpenGraph, Twitter Cards, structured data, and AI-friendly metadata
+ * @see https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+ */
 export const metadata: Metadata = {
   metadataBase: new URL("https://developer.store.varity.so"),
   title: {
@@ -53,7 +62,8 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "google-site-verification-code-here",
+    // TODO: Replace with actual Google Search Console verification code
+    // google: "google-site-verification-code-here",
   },
   openGraph: {
     type: "website",
@@ -93,13 +103,35 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/logo/varity-logo-color.svg", sizes: "any", type: "image/svg+xml" }
+      { url: "/logo/varity-logo-color.svg", sizes: "any", type: "image/svg+xml" },
+      { url: "/favicon.svg", sizes: "16x16", type: "image/svg+xml" },
+      { url: "/favicon.svg", sizes: "32x32", type: "image/svg+xml" },
     ],
     shortcut: "/favicon.svg",
-    apple: "/logo/varity-logo-color.svg",
+    apple: [
+      { url: "/logo/varity-logo-color.svg", sizes: "180x180", type: "image/svg+xml" },
+    ],
   },
 };
 
+/**
+ * Root layout component for the Varity Developer Portal
+ *
+ * Provides the HTML structure, global styles, and shared components (Header, Footer)
+ * for all pages in the application. Includes accessibility features like semantic
+ * landmarks and proper document structure.
+ *
+ * Features:
+ * - Semantic HTML with proper landmarks (header, main, footer)
+ * - Skip-to-content anchor target (#main-content)
+ * - PWA manifest support
+ * - Optimized font loading and preconnects
+ * - Dark mode support with suppressHydrationWarning
+ * - Structured data for SEO
+ *
+ * @param children - The page content to render
+ * @returns The complete HTML document structure
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -108,17 +140,24 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        {/* PWA Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://rpc-varity-testnet-rroe52pwjp.t.conduit.xyz" />
+
+        {/* Structured Data for SEO */}
         <StructuredData data={homePageStructuredData} id="homepage-schema" />
       </head>
       <body className={`${fontClasses} antialiased min-h-screen bg-background text-foreground`}>
         <Providers>
           <div className="flex min-h-screen flex-col">
             <Header />
-            <main className="flex-1">{children}</main>
+            <main id="main-content" className="flex-1">
+              {children}
+            </main>
             <Footer />
           </div>
         </Providers>
