@@ -73,6 +73,24 @@ export function validateMaxLength(
 }
 
 /**
+ * Validates a field with minimum length
+ * @param value - The value to validate
+ * @param minLength - Minimum required length
+ * @param fieldName - The display name for error messages
+ * @returns Error message or null if valid
+ */
+export function validateMinLength(
+  value: string,
+  minLength: number,
+  fieldName: string
+): string | null {
+  if (value && value.trim().length < minLength) {
+    return `${fieldName} must be at least ${minLength} characters`;
+  }
+  return null;
+}
+
+/**
  * Validates a Twitter handle
  * @param handle - The Twitter handle (with or without @)
  * @returns Error message or null if valid
@@ -126,8 +144,28 @@ export function validateAppSubmission(data: AppFormData): ValidationResult {
   const nameError = validateRequired(data.name, "App name");
   if (nameError) errors.name = nameError;
 
+  // Minimum length validation for name
+  if (!errors.name) {
+    const nameMinError = validateMinLength(
+      data.name,
+      VALIDATION.NAME_MIN_LENGTH,
+      "App name"
+    );
+    if (nameMinError) errors.name = nameMinError;
+  }
+
   const descriptionError = validateRequired(data.description, "Description");
   if (descriptionError) errors.description = descriptionError;
+
+  // Minimum length validation for description
+  if (!errors.description) {
+    const descMinError = validateMinLength(
+      data.description,
+      VALIDATION.DESCRIPTION_MIN_LENGTH,
+      "Description"
+    );
+    if (descMinError) errors.description = descMinError;
+  }
 
   const appUrlRequiredError = validateRequired(data.appUrl, "Application URL");
   if (appUrlRequiredError) {
@@ -229,6 +267,16 @@ export function validateAppUpdate(data: AppUpdateFormData): ValidationResult {
   // Required fields
   const descriptionError = validateRequired(data.description, "Description");
   if (descriptionError) errors.description = descriptionError;
+
+  // Minimum length validation for description
+  if (!errors.description) {
+    const descMinError = validateMinLength(
+      data.description,
+      VALIDATION.DESCRIPTION_MIN_LENGTH,
+      "Description"
+    );
+    if (descMinError) errors.description = descMinError;
+  }
 
   const appUrlRequiredError = validateRequired(data.appUrl, "Application URL");
   if (appUrlRequiredError) {

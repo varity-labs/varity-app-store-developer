@@ -83,7 +83,9 @@ export interface AppData {
 
 // Form validation
 export const VALIDATION = {
+  NAME_MIN_LENGTH: 3,
   NAME_MAX_LENGTH: 100,
+  DESCRIPTION_MIN_LENGTH: 50,
   DESCRIPTION_MAX_LENGTH: 1000,
   MAX_SCREENSHOTS: 5,
 } as const;

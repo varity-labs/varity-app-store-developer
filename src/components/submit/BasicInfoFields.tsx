@@ -75,6 +75,17 @@ export default function BasicInfoFields({
                 {formData.name.length}/{VALIDATION.NAME_MAX_LENGTH} characters
               </p>
             )}
+            <p className={`text-xs ${
+              formData.name.length >= VALIDATION.NAME_MIN_LENGTH
+                ? "text-emerald-400"
+                : formData.name.length > 0
+                ? "text-amber-400"
+                : "text-slate-500"
+            }`}>
+              {formData.name.length >= VALIDATION.NAME_MIN_LENGTH
+                ? `${VALIDATION.NAME_MIN_LENGTH}+ minimum met`
+                : `${formData.name.length}/${VALIDATION.NAME_MIN_LENGTH} minimum`}
+            </p>
           </div>
         </div>
 
@@ -111,9 +122,22 @@ export default function BasicInfoFields({
                 Tip: Focus on benefits, not just features
               </p>
             )}
-            <p className="text-xs text-slate-500">
-              {formData.description.length}/{VALIDATION.DESCRIPTION_MAX_LENGTH}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className={`text-xs ${
+                formData.description.length >= VALIDATION.DESCRIPTION_MIN_LENGTH
+                  ? "text-emerald-400"
+                  : formData.description.length > 0
+                  ? "text-amber-400"
+                  : "text-slate-500"
+              }`}>
+                {formData.description.length >= VALIDATION.DESCRIPTION_MIN_LENGTH
+                  ? `${VALIDATION.DESCRIPTION_MIN_LENGTH}+ minimum met`
+                  : `${formData.description.length}/${VALIDATION.DESCRIPTION_MIN_LENGTH} minimum`}
+              </p>
+              <p className="text-xs text-slate-500">
+                {formData.description.length}/{VALIDATION.DESCRIPTION_MAX_LENGTH}
+              </p>
+            </div>
           </div>
         </div>
 

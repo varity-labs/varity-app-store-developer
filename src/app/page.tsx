@@ -13,6 +13,7 @@ import {
   Package,
   ExternalLink,
 } from "lucide-react";
+import CliCodeBlock from "@/components/CliCodeBlock";
 
 export default function DeveloperLandingPage() {
   return (
@@ -135,63 +136,7 @@ export default function DeveloperLandingPage() {
           </div>
 
           {/* Code Block */}
-          <div className="relative">
-            <div className="rounded-xl border border-border bg-background-secondary overflow-hidden">
-              {/* Terminal Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background-tertiary">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-error/50" />
-                    <div className="w-3 h-3 rounded-full bg-warning/50" />
-                    <div className="w-3 h-3 rounded-full bg-success/50" />
-                  </div>
-                  <span className="text-xs text-foreground-muted ml-2">Terminal</span>
-                </div>
-                <span className="text-xs text-foreground-muted">zsh</span>
-              </div>
-
-              {/* Code Content */}
-              <div className="p-6 font-mono text-sm overflow-x-auto">
-                <div className="space-y-4">
-                  <div>
-                    <span className="text-foreground-muted"># Install the Varity CLI</span>
-                    <div className="mt-1">
-                      <span className="text-brand-400">$</span>{" "}
-                      <span className="text-foreground">npm install -g @varity/cli</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-foreground-muted"># Initialize your project</span>
-                    <div className="mt-1">
-                      <span className="text-brand-400">$</span>{" "}
-                      <span className="text-foreground">varity init</span>
-                    </div>
-                    <div className="mt-2 text-foreground-muted text-xs">
-                      <span className="text-success">✓</span> Created varity.config.ts
-                      <br />
-                      <span className="text-success">✓</span> Connected to Varity Network
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-foreground-muted"># Deploy to production</span>
-                    <div className="mt-1">
-                      <span className="text-brand-400">$</span>{" "}
-                      <span className="text-foreground">varity deploy --prod</span>
-                    </div>
-                    <div className="mt-2 text-foreground-muted text-xs">
-                      <span className="text-success">✓</span> Build completed in 45s
-                      <br />
-                      <span className="text-success">✓</span> Deployed to https://myapp.varity.so
-                      <br />
-                      <span className="text-brand-400">→</span> Submit for review at /submit
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <CliCodeBlock />
         </div>
       </section>
 
