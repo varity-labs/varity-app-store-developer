@@ -28,7 +28,6 @@ import SocialLinksFields from "@/components/submit/SocialLinksFields";
 import LegalDocsFields from "@/components/submit/LegalDocsFields";
 import ScreenshotsField from "@/components/submit/ScreenshotsField";
 import SubmitProgress, { SUBMIT_STEPS } from "@/components/submit/SubmitProgress";
-import BenefitsSidebar from "@/components/submit/BenefitsSidebar";
 
 /**
  * Form data interface for app submission
@@ -443,14 +442,10 @@ export default function SubmitPage() {
             >
               Sign In to Continue
             </button>
-            <p className="mt-4 text-xs text-foreground-muted">
-              Join 100+ developers building on Varity
-            </p>
           </div>
         ) : (
-          /* Two-column layout: Form + Sidebar */
-          <div className="grid gap-8 lg:grid-cols-[1fr,320px]">
-            {/* Main form column */}
+          /* Form layout */
+          <div className="max-w-3xl mx-auto">
             <div>
               {/* Progress indicator */}
               <SubmitProgress
@@ -712,13 +707,6 @@ export default function SubmitPage() {
                   </div>
                 </div>
               </form>
-            </div>
-
-            {/* Sidebar column */}
-            <div className="hidden lg:block">
-              <div className="sticky top-8">
-                <BenefitsSidebar />
-              </div>
             </div>
           </div>
         )}
