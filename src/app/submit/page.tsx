@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, AlertCircle, CheckCircle, Loader2, Save, Clock } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle, CheckCircle, Loader2, Save, Clock, Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useContract } from "@/hooks/useContract";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
@@ -27,6 +27,8 @@ import CompanyInfoFields from "@/components/submit/CompanyInfoFields";
 import SocialLinksFields from "@/components/submit/SocialLinksFields";
 import LegalDocsFields from "@/components/submit/LegalDocsFields";
 import ScreenshotsField from "@/components/submit/ScreenshotsField";
+import SubmitProgress, { SUBMIT_STEPS } from "@/components/submit/SubmitProgress";
+import BenefitsSidebar from "@/components/submit/BenefitsSidebar";
 
 /**
  * Form data interface for app submission
@@ -77,29 +79,24 @@ const FORM_STORAGE_KEY = "varity-app-submit-draft";
 /**
  * Submit Page - Application submission form for Varity App Store
  *
- * Features:
- * - GitHub integration for auto-populating fields from repos
- * - Form persistence via localStorage (auto-save drafts)
- * - Real-time validation with field-level error messages
- * - Unsaved changes warning on navigation
- * - Comprehensive form fields with accessibility (ARIA, fieldsets)
- * - Security: Rate limiting, content sanitization, XSS protection
- * - Two-step submission: Email notification + blockchain registration
+ * OPTIMIZED FOR CONVERSION - Goal: 100+ apps in Week 1
  *
- * Quality Score: 10/10
- * - ✅ TypeScript types for all props and state
- * - ✅ Proper error boundaries and loading states
- * - ✅ Accessible form controls (labels, ARIA, fieldsets)
- * - ✅ Mobile responsive design
- * - ✅ Form persistence via localStorage
- * - ✅ Clear validation and error messages
- * - ✅ JSDoc comments for complex logic
- * - ✅ Modular components (656 lines → ~400 lines target)
+ * Features:
+ * - Multi-step wizard (reduces cognitive load)
+ * - Progress indicator with encouraging copy
+ * - Benefits sidebar with social proof
+ * - Early adopter urgency elements
+ * - Minimal required fields for MVP
+ * - Auto-save with prominent "Save & Continue Later"
+ * - GitHub integration for quick import
  */
 export default function SubmitPage() {
   const router = useRouter();
   const { authenticated, login } = useAuth();
   const { registerApp, isLoading, error: contractError, txHash, resetState, account } = useContract();
+
+  // Multi-step form state
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Form persistence hook - saves draft to localStorage
   const {
@@ -128,6 +125,16 @@ export default function SubmitPage() {
   const validationResult = useMemo((): ValidationResult => {
     return validateAppSubmission(formData);
   }, [formData]);
+
+  // Check if Step 1 (required fields) is valid
+  const isStep1Valid = useMemo(() => {
+    return (
+      formData.name.trim() !== "" &&
+      formData.description.trim() !== "" &&
+      formData.appUrl.trim() !== "" &&
+      formData.category !== ""
+    );
+  }, [formData.name, formData.description, formData.appUrl, formData.category]);
 
   // Get error for a specific field (only if touched)
   const getFieldError = useCallback((fieldName: string): string | undefined => {
@@ -173,6 +180,28 @@ export default function SubmitPage() {
     setErrorMessage(message);
     setSubmitStatus("error");
   }, []);
+
+  // Step navigation
+  const handleNextStep = () => {
+    if (currentStep === 1) {
+      // Validate required fields before proceeding
+      setTouchedFields(new Set(["name", "description", "appUrl", "category"]));
+      if (!isStep1Valid) {
+        return;
+      }
+    }
+    setCurrentStep((prev) => Math.min(prev + 1, SUBMIT_STEPS.length));
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleStepClick = (step: number) => {
+    if (step <= currentStep) {
+      setCurrentStep(step);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -324,7 +353,7 @@ export default function SubmitPage() {
     <div className="min-h-screen">
       {/* Navigation breadcrumb */}
       <nav className="border-b border-slate-800/50" aria-label="Breadcrumb">
-        <div className="mx-auto max-w-3xl px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <Link
             href="/"
             onClick={(e) => {
@@ -340,62 +369,26 @@ export default function SubmitPage() {
         </div>
       </nav>
 
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-        <header className="mb-10">
-          <h1 className="text-display-sm text-foreground">Submit Your Application</h1>
-          <p className="mt-3 text-body-md text-foreground-secondary max-w-2xl">
-            Join the growing ecosystem of verified applications. Your app will be reviewed within 48 hours and discoverable by enterprise customers worldwide.
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header with encouraging copy */}
+        <header className="mb-8 text-center">
+          <h1 className="text-display-sm text-foreground">Launch Your App on Varity</h1>
+          <p className="mt-3 text-body-md text-foreground-secondary max-w-2xl mx-auto">
+            You&apos;re <span className="text-brand-400 font-semibold">5 minutes away</span> from reaching enterprise customers worldwide.
+            Fill in the basics and we&apos;ll handle the rest.
           </p>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/5 px-4 py-1.5 text-xs text-brand-400">
-              <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Average approval time: 24 hours</span>
-            </div>
-            {/* Draft indicator */}
-            {hasDraft && isDirty && (
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-4 py-1.5 text-xs text-amber-400">
-                <Save className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Draft saved{lastSaved ? ` at ${lastSaved.toLocaleTimeString()}` : ""}</span>
-              </div>
-            )}
-          </div>
         </header>
 
-        {/* Draft restored notification */}
-        {hasDraft && !isDirty && authenticated && (
-          <div className="mb-8 flex items-start gap-4 rounded-xl border border-blue-500/20 bg-blue-950/30 p-6 animate-fade-in">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/10">
-              <Clock className="h-5 w-5 text-blue-400" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-heading-md text-blue-400">Draft Restored</h3>
-              <p className="mt-2 text-body-sm text-blue-400/80">
-                We found an unfinished submission. Your previous progress has been restored.
-              </p>
-              <button
-                onClick={() => {
-                  if (confirm("Are you sure you want to clear your draft? This cannot be undone.")) {
-                    resetForm();
-                  }
-                }}
-                className="mt-3 text-body-sm text-blue-400 hover:text-blue-300 transition-colors underline"
-              >
-                Start fresh instead
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Success message */}
+        {/* Success message - Full width */}
         {submitStatus === "success" && (
-          <div className="mb-8 flex items-start gap-4 rounded-xl border border-emerald-500/20 bg-emerald-950/30 p-6 animate-fade-in">
+          <div className="mb-8 flex items-start gap-4 rounded-xl border border-emerald-500/20 bg-emerald-950/30 p-6 animate-fade-in max-w-3xl mx-auto">
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
               <CheckCircle className="h-5 w-5 text-emerald-400" />
             </div>
             <div className="flex-1">
               <h3 className="text-heading-md text-emerald-400">Application Submitted Successfully!</h3>
               <p className="mt-2 text-body-sm text-emerald-400/80">
-                Your application has been submitted successfully! Our team will review it within 24-48 hours. Check your dashboard for status updates.
+                Congratulations! Your application is now in review. Our team typically approves quality apps within 24 hours.
               </p>
               {txHash && varityL3.blockExplorers?.[0] && (
                 <a
@@ -415,9 +408,9 @@ export default function SubmitPage() {
           </div>
         )}
 
-        {/* Error message */}
+        {/* Error message - Full width */}
         {submitStatus === "error" && (
-          <div className="mb-8 flex items-start gap-4 rounded-xl border border-error/20 bg-red-950/30 p-6 animate-fade-in">
+          <div className="mb-8 flex items-start gap-4 rounded-xl border border-error/20 bg-red-950/30 p-6 animate-fade-in max-w-3xl mx-auto">
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-error/10">
               <AlertCircle className="h-5 w-5 text-error" />
             </div>
@@ -436,13 +429,13 @@ export default function SubmitPage() {
 
         {/* Auth gate */}
         {!authenticated ? (
-          <div className="card flex flex-col items-center justify-center py-16 text-center">
+          <div className="card flex flex-col items-center justify-center py-16 text-center max-w-xl mx-auto">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/10 mb-6">
-              <AlertCircle className="h-8 w-8 text-brand-400" />
+              <Rocket className="h-8 w-8 text-brand-400" />
             </div>
-            <h2 className="text-heading-lg text-foreground">Ready to submit your app?</h2>
+            <h2 className="text-heading-lg text-foreground">Ready to launch your app?</h2>
             <p className="mt-3 text-body-md text-foreground-secondary max-w-sm">
-              Sign in with your wallet or email to submit your application. It takes less than 2 minutes.
+              Sign in to submit your application. It takes about 5 minutes and your progress is saved automatically.
             </p>
             <button
               onClick={login}
@@ -455,108 +448,279 @@ export default function SubmitPage() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* GitHub Integration (extracted component) */}
-            <GitHubIntegration formData={formData} setFormData={setFormData} />
+          /* Two-column layout: Form + Sidebar */
+          <div className="grid gap-8 lg:grid-cols-[1fr,320px]">
+            {/* Main form column */}
+            <div>
+              {/* Progress indicator */}
+              <SubmitProgress
+                steps={SUBMIT_STEPS}
+                currentStep={currentStep}
+                onStepClick={handleStepClick}
+              />
 
-            {/* Basic Information Fields (extracted component) */}
-            <BasicInfoFields
-              formData={formData}
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              getFieldError={getFieldError}
-              getInputClassName={getInputClassName}
-            />
-
-            {/* Screenshots (extracted component) */}
-            <ScreenshotsField
-              formData={formData}
-              setFormData={setFormData}
-              onError={handleComponentError}
-            />
-
-            {/* Company Information (extracted component) */}
-            <CompanyInfoFields formData={formData} handleChange={handleChange} />
-
-            {/* Social Links (extracted component) */}
-            <SocialLinksFields formData={formData} handleChange={handleChange} />
-
-            {/* Legal Documents (extracted component) */}
-            <LegalDocsFields formData={formData} handleChange={handleChange} />
-
-            {/* Built with Varity SDK */}
-            <fieldset className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-              <legend className="sr-only">Varity SDK Integration</legend>
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="builtWithVarity"
-                  name="builtWithVarity"
-                  checked={formData.builtWithVarity}
-                  onChange={handleChange}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-brand-500 focus:ring-brand-600 focus:ring-offset-slate-900"
-                  aria-describedby="builtWithVarity-description"
-                />
-                <div className="flex-1">
-                  <label htmlFor="builtWithVarity" className="text-sm font-medium text-slate-200 cursor-pointer">
-                    Built with Varity SDK
-                  </label>
-                  <p id="builtWithVarity-description" className="mt-1 text-xs text-slate-500">
-                    Apps built with Varity SDK get a verified badge and priority placement in the marketplace
-                  </p>
+              {/* Draft restored notification */}
+              {hasDraft && !isDirty && currentStep === 1 && (
+                <div className="mb-6 flex items-start gap-4 rounded-xl border border-blue-500/20 bg-blue-950/30 p-5 animate-fade-in">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                    <Clock className="h-4 w-4 text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-blue-400">Welcome back!</h3>
+                    <p className="mt-1 text-xs text-blue-400/80">
+                      We restored your previous progress. Pick up where you left off.
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (confirm("Are you sure you want to clear your draft? This cannot be undone.")) {
+                          resetForm();
+                        }
+                      }}
+                      className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors underline"
+                    >
+                      Start fresh instead
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </fieldset>
+              )}
 
-            {/* Form Validation Summary (if errors exist) */}
-            {!validationResult.isValid && Object.keys(validationResult.errors).length > 0 && (
-              <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-4" role="alert" aria-live="polite">
-                <p className="text-sm font-medium text-amber-400">Please fix the following errors before submitting:</p>
-                <ul className="mt-2 list-disc list-inside space-y-1 text-xs text-amber-400/80">
-                  {Object.entries(validationResult.errors).slice(0, 5).map(([field, error]) => (
-                    <li key={field}>{error}</li>
-                  ))}
-                  {Object.keys(validationResult.errors).length > 5 && (
-                    <li>...and {Object.keys(validationResult.errors).length - 5} more</li>
-                  )}
-                </ul>
-              </div>
-            )}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* STEP 1: Basic Information (Required fields only) */}
+                {currentStep === 1 && (
+                  <div className="space-y-6 animate-fade-in">
+                    {/* GitHub Integration - Quick import */}
+                    <GitHubIntegration formData={formData} setFormData={setFormData} />
 
-            {/* Form Actions */}
-            <div className="flex items-center justify-between border-t border-slate-800/50 pt-6">
-              {/* Draft status indicator */}
-              <div className="flex items-center gap-2">
-                {isDirty && (
-                  <span className="text-xs text-slate-500 flex items-center gap-1.5" role="status" aria-live="polite">
-                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" aria-hidden="true"></span>
-                    <span>Unsaved changes</span>
-                  </span>
+                    {/* Basic Information Fields */}
+                    <BasicInfoFields
+                      formData={formData}
+                      handleChange={handleChange}
+                      handleBlur={handleBlur}
+                      getFieldError={getFieldError}
+                      getInputClassName={getInputClassName}
+                    />
+                  </div>
                 )}
-              </div>
 
-              {/* Action buttons */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="rounded-md border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
-                  aria-label="Cancel and discard changes"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading || submitStatus === "success"}
-                  className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-5 py-2.5 text-sm font-medium text-slate-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label={isLoading ? "Submitting application" : "Submit application for review"}
-                >
-                  {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                  {isLoading ? "Submitting..." : submitStatus === "success" ? "Submitted" : "Submit for Review"}
-                </button>
+                {/* STEP 2: Optional Details (Media, Company, Social, Legal) */}
+                {currentStep === 2 && (
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-5 mb-6">
+                      <p className="text-sm text-slate-300">
+                        <span className="font-semibold text-brand-400">Optional but recommended:</span>{" "}
+                        Adding more details increases your app&apos;s visibility and credibility.
+                      </p>
+                    </div>
+
+                    {/* Screenshots */}
+                    <ScreenshotsField
+                      formData={formData}
+                      setFormData={setFormData}
+                      onError={handleComponentError}
+                    />
+
+                    {/* Company Information */}
+                    <CompanyInfoFields formData={formData} handleChange={handleChange} />
+
+                    {/* Social Links */}
+                    <SocialLinksFields formData={formData} handleChange={handleChange} />
+
+                    {/* Legal Documents */}
+                    <LegalDocsFields formData={formData} handleChange={handleChange} />
+
+                    {/* Built with Varity SDK */}
+                    <fieldset className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+                      <legend className="sr-only">Varity SDK Integration</legend>
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          id="builtWithVarity"
+                          name="builtWithVarity"
+                          checked={formData.builtWithVarity}
+                          onChange={handleChange}
+                          className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-brand-500 focus:ring-brand-600 focus:ring-offset-slate-900"
+                          aria-describedby="builtWithVarity-description"
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="builtWithVarity" className="text-sm font-medium text-slate-200 cursor-pointer">
+                            Built with Varity SDK
+                          </label>
+                          <p id="builtWithVarity-description" className="mt-1 text-xs text-slate-500">
+                            Apps built with Varity SDK get a verified badge and priority placement
+                          </p>
+                        </div>
+                      </div>
+                    </fieldset>
+                  </div>
+                )}
+
+                {/* STEP 3: Review & Submit */}
+                {currentStep === 3 && (
+                  <div className="space-y-6 animate-fade-in">
+                    {/* Review Summary */}
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-6">
+                      <h3 className="text-lg font-semibold text-slate-200 mb-4">Review Your Submission</h3>
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-slate-800/50 pb-3">
+                          <span className="text-sm text-slate-500">App Name</span>
+                          <span className="text-sm text-slate-200 font-medium text-right max-w-[60%]">{formData.name || "Not provided"}</span>
+                        </div>
+                        <div className="flex justify-between items-start border-b border-slate-800/50 pb-3">
+                          <span className="text-sm text-slate-500">Category</span>
+                          <span className="text-sm text-slate-200">{formData.category || "Not selected"}</span>
+                        </div>
+                        <div className="flex justify-between items-start border-b border-slate-800/50 pb-3">
+                          <span className="text-sm text-slate-500">App URL</span>
+                          <a href={formData.appUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-400 hover:text-brand-300 truncate max-w-[60%]">
+                            {formData.appUrl || "Not provided"}
+                          </a>
+                        </div>
+                        <div className="border-b border-slate-800/50 pb-3">
+                          <span className="text-sm text-slate-500 block mb-2">Description</span>
+                          <p className="text-sm text-slate-300 line-clamp-3">{formData.description || "Not provided"}</p>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-sm text-slate-500">Screenshots</span>
+                          <span className="text-sm text-slate-200">{formData.screenshots.length} added</span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(1)}
+                        className="mt-4 text-sm text-brand-400 hover:text-brand-300 transition-colors"
+                      >
+                        Edit details
+                      </button>
+                    </div>
+
+                    {/* Form Validation Summary (if errors exist) */}
+                    {!validationResult.isValid && Object.keys(validationResult.errors).length > 0 && (
+                      <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-4" role="alert" aria-live="polite">
+                        <p className="text-sm font-medium text-amber-400">Please fix the following before submitting:</p>
+                        <ul className="mt-2 list-disc list-inside space-y-1 text-xs text-amber-400/80">
+                          {Object.entries(validationResult.errors).slice(0, 5).map(([field, error]) => (
+                            <li key={field}>{error}</li>
+                          ))}
+                          {Object.keys(validationResult.errors).length > 5 && (
+                            <li>...and {Object.keys(validationResult.errors).length - 5} more</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* What happens next */}
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-5">
+                      <h4 className="text-sm font-semibold text-emerald-400 mb-3">What happens next?</h4>
+                      <ol className="space-y-2 text-sm text-emerald-400/80">
+                        <li className="flex items-start gap-2">
+                          <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">1</span>
+                          <span>Your app is submitted to the Varity L3 blockchain</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">2</span>
+                          <span>Our team reviews within 24 hours</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">3</span>
+                          <span>Once approved, your app is live and discoverable</span>
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
+
+                {/* Form Actions */}
+                <div className="flex items-center justify-between border-t border-slate-800/50 pt-6">
+                  {/* Left side: Draft status / Back button */}
+                  <div className="flex items-center gap-3">
+                    {currentStep > 1 ? (
+                      <button
+                        type="button"
+                        onClick={handlePrevStep}
+                        className="inline-flex items-center gap-2 rounded-md border border-slate-800 px-4 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {isDirty && (
+                          <span className="text-xs text-slate-500 flex items-center gap-1.5" role="status" aria-live="polite">
+                            <Save className="h-3.5 w-3.5 text-brand-400" aria-hidden="true" />
+                            <span>Auto-saved{lastSaved ? ` at ${lastSaved.toLocaleTimeString()}` : ""}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right side: Action buttons */}
+                  <div className="flex gap-3">
+                    {currentStep < SUBMIT_STEPS.length ? (
+                      <>
+                        {currentStep === 1 && (
+                          <button
+                            type="button"
+                            onClick={handleCancel}
+                            className="rounded-md border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        {currentStep === 2 && (
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(3)}
+                            className="rounded-md border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
+                          >
+                            Skip optional fields
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleNextStep}
+                          disabled={currentStep === 1 && !isStep1Valid}
+                          className="inline-flex items-center gap-2 rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition-all hover:bg-brand-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Continue
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleCancel}
+                          className="rounded-md border border-slate-800 px-5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:border-slate-700 hover:text-slate-200"
+                          aria-label="Cancel and discard changes"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isLoading || submitStatus === "success" || !validationResult.isValid}
+                          className="inline-flex items-center gap-2 rounded-md bg-brand-500 px-6 py-2.5 text-sm font-semibold text-slate-950 transition-all hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.3)] disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={isLoading ? "Submitting application" : "Submit application for review"}
+                        >
+                          {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                          {isLoading ? "Submitting..." : submitStatus === "success" ? "Submitted!" : "Submit for Review"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Sidebar column */}
+            <div className="hidden lg:block">
+              <div className="sticky top-8">
+                <BenefitsSidebar />
               </div>
             </div>
-          </form>
+          </div>
         )}
       </div>
     </div>
