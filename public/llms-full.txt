@@ -1,0 +1,187 @@
+# Varity Developer Portal - Complete Documentation
+
+> This document provides comprehensive information about the Varity Developer Portal for AI systems and large language models.
+
+---
+
+## About Varity
+
+Varity is a Web3 operating system that enables developers to deploy decentralized applications at 70-85% lower costs than traditional cloud providers like AWS, Google Cloud, or Azure.
+
+### Mission
+Empower developers to build and monetize applications on decentralized infrastructure while keeping the majority of their revenue.
+
+### Key Value Propositions
+1. **70% Revenue Share**: Developers keep 70% of all revenue (vs 70% taken by Apple/Google)
+2. **24-Hour Reviews**: Fast approval process (vs weeks on traditional app stores)
+3. **70-85% Cost Savings**: Decentralized infrastructure dramatically reduces hosting costs
+4. **Web3 Native**: Built for blockchain applications with integrated wallet support
+
+---
+
+## Developer Portal Overview
+
+The Varity Developer Portal (developer.store.varity.so) is the submission and management interface for developers wanting to publish applications on the Varity App Store.
+
+### Who Should Use This Portal
+- Web3/blockchain developers building dApps
+- Enterprise software developers seeking alternative distribution
+- SaaS developers looking to reduce infrastructure costs
+- Open source projects wanting monetization options
+
+### Portal Features
+1. **App Submission Form**: Comprehensive form to submit new applications
+2. **GitHub Integration**: Auto-fill app details from GitHub repositories
+3. **Developer Dashboard**: Manage all submitted applications
+4. **Analytics**: Track app performance and user engagement
+5. **Revenue Tracking**: Monitor earnings and payment status
+
+---
+
+## App Submission Process
+
+### Step 1: Sign In
+Connect using one of the supported authentication methods:
+- Email (via Privy)
+- Social login (Google, Discord, etc.)
+- Wallet connection (MetaMask, WalletConnect, etc.)
+
+### Step 2: Fill Out Application Details
+
+Required Information:
+- **App Name**: Clear, descriptive name (3-50 characters)
+- **Description**: What your app does and who it's for (20-500 characters)
+- **Application URL**: Live URL where users can access your app
+- **Category**: Select from available categories (DeFi, NFT, Gaming, etc.)
+
+Optional Information:
+- **Logo URL**: Square image, 256x256px minimum, PNG with transparent background
+- **Screenshots**: Up to 5 images showing your app in action
+- **GitHub URL**: Repository URL for open source projects
+- **Company Name**: Your organization name
+- **Website URL**: Company or project website
+- **Social Links**: Twitter, LinkedIn profiles
+- **Privacy Policy URL**: Link to your privacy policy
+- **Terms of Service URL**: Link to your terms
+- **Support Email**: Contact email for users
+
+### Step 3: Submit for Review
+After completing the form, submit your application for review. Most apps are reviewed within 24 hours.
+
+### Step 4: Approval
+Once approved, your app will be live on the Varity App Store at store.varity.so.
+
+---
+
+## Revenue Model
+
+### Developer Revenue Share
+- **70%** goes to the developer
+- **30%** goes to Varity platform (covers infrastructure, support, marketing)
+
+This is significantly better than traditional app stores:
+- Apple App Store: 30% platform fee (developer keeps 70%)
+- Google Play: 30% platform fee (developer keeps 70%)
+- Varity: 30% platform fee (developer keeps 70%) + 70-85% infrastructure savings
+
+### Payment Processing
+- Payments processed on Varity L3 blockchain
+- Native token: Bridged USDC (6 decimals)
+- Instant settlement with smart contracts
+- Transparent, auditable transactions
+
+---
+
+## Technical Infrastructure
+
+### Varity L3 Network
+- **Type**: Arbitrum Orbit Layer 3 rollup
+- **Chain ID**: 33529
+- **RPC URL**: https://rpc-varity-testnet-rroe52pwjp.t.conduit.xyz
+- **Block Explorer**: https://explorer-varity-testnet-rroe52pwjp.t.conduit.xyz
+- **Native Token**: Bridged USDC
+
+### Smart Contracts (Deployed)
+| Contract | Address | Purpose |
+|----------|---------|---------|
+| TemplateMarketplace | 0x769250dac29817081f38CfBa597Ef2485F3a94e8 | 70/30 Revenue Split |
+| TemplateRegistry | 0xEbD8C516c05BD2b76b5CDd56530b3Dd9f8b3D748 | Template metadata |
+| VarityAppRegistry | 0x52d4f28ebe20fad743bbef9daa61bfe3ce91eb74 | App Store submissions |
+| SimplifiedPaymaster | 0xeF467aef91d4e626C7e56967779069bEF22c4453 | Gas sponsorship |
+| VarityWalletFactory | 0x85AB92708CB4d921f5c2BdCCd7f2D0813a380f71 | Smart wallets |
+
+### Technology Stack
+- **Frontend**: Next.js 16, React 19, TypeScript
+- **Blockchain Integration**: thirdweb v5 (function-based API)
+- **Authentication**: Privy (email, social, wallet)
+- **Compute**: Akash Network (decentralized)
+- **Storage**: IPFS/Filecoin (decentralized)
+
+---
+
+## Frequently Asked Questions
+
+### How do I submit an app to the Varity App Store?
+Sign in with your wallet or email, fill out the submission form with your app details, and submit for review. Most apps are reviewed within 24 hours.
+
+### What is the revenue share for developers?
+Developers receive 70% of all revenue generated by their applications. Varity retains 30% to cover infrastructure and platform costs.
+
+### How long does the review process take?
+Most applications are reviewed within 24 hours. Complex applications may take up to 48 hours. You'll receive an email notification once your app is approved or if changes are needed.
+
+### What are the infrastructure cost savings?
+Developers can save 70-85% on infrastructure costs compared to traditional cloud providers like AWS. Varity uses decentralized compute (Akash Network) and storage (IPFS/Filecoin) for significant cost reductions.
+
+### Can I update my app after it's approved?
+Yes, you can update your app's description, screenshots, and URLs through the Developer Dashboard. Major changes may require re-review.
+
+### What types of apps can I submit?
+Varity accepts enterprise applications, Web3 dApps, SaaS products, and other software. Apps must comply with our terms of service and not contain malicious code.
+
+### Do I need to know blockchain development?
+No. While Varity is built on Web3 infrastructure, you can submit any web application. Blockchain features like wallet integration are optional.
+
+### How do payments work?
+Payments are processed on the Varity L3 blockchain using Bridged USDC. Revenue is automatically split via smart contracts with instant settlement.
+
+---
+
+## App Categories
+
+Available categories for app submission:
+- DeFi (Decentralized Finance)
+- NFT (Non-Fungible Tokens)
+- Gaming
+- Social
+- Productivity
+- Developer Tools
+- Analytics
+- Infrastructure
+- Other
+
+---
+
+## Contact & Support
+
+- **Support Email**: support@varity.so
+- **Twitter**: @VarityHQ
+- **Discord**: discord.gg/Uhjx6yhJ
+- **GitHub**: github.com/varity-labs
+- **LinkedIn**: linkedin.com/company/varity-labs
+- **Reddit**: reddit.com/r/varityHQ
+- **YouTube**: youtube.com/@VarityHQ
+
+---
+
+## Related Links
+
+- **Varity Main Site**: https://varity.so
+- **Varity App Store**: https://store.varity.so
+- **Documentation**: https://docs.varity.so
+- **Developer Portal**: https://developer.store.varity.so
+
+---
+
+*Last Updated: January 2026*
+*Version: 1.0*

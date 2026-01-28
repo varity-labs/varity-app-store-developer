@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     title: "Developer Dashboard | Varity Developer Portal",
     description:
       "Manage your applications and track performance on the Varity Developer Dashboard.",
-    url: "https://developer.store.varity.so/dashboard",
+    url: "https://developer.store.varity.so/dashboard/",
     type: "website",
   },
   twitter: {
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
       "Manage your applications and track performance on the Varity Developer Dashboard.",
   },
   alternates: {
-    canonical: "https://developer.store.varity.so/dashboard",
+    canonical: "https://developer.store.varity.so/dashboard/",
   },
 };
 

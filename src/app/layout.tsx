@@ -92,7 +92,7 @@ export const metadata: Metadata = {
     images: ["/og-image.svg"],
   },
   alternates: {
-    canonical: "https://developer.store.varity.so",
+    canonical: "https://developer.store.varity.so/",
   },
   other: {
     "ai-content-declaration": "factual-informational",
@@ -147,6 +147,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://rpc-varity-testnet-rroe52pwjp.t.conduit.xyz" />
+        <link rel="dns-prefetch" href="https://explorer-varity-testnet-rroe52pwjp.t.conduit.xyz" />
+        <link rel="dns-prefetch" href="https://api.thirdweb.com" />
+        <link rel="dns-prefetch" href="https://auth.privy.io" />
+
+        {/* Security headers for E-E-A-T trust signals */}
+        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
 
         {/* Structured Data for SEO */}
         <StructuredData data={homePageStructuredData} id="homepage-schema" />

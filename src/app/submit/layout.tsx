@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     title: "Submit Your Application | Varity Developer Portal",
     description:
       "Submit your enterprise application to the Varity App Store. Get 70% revenue share, 24-hour review, and access to enterprise customers.",
-    url: "https://developer.store.varity.so/submit",
+    url: "https://developer.store.varity.so/submit/",
     type: "website",
     images: [
       {
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     images: ["/og-image.svg"],
   },
   alternates: {
-    canonical: "https://developer.store.varity.so/submit",
+    canonical: "https://developer.store.varity.so/submit/",
   },
 };
 
